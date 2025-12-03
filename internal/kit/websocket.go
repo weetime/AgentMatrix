@@ -337,7 +337,7 @@ func (s *WebSocket) handlePing(conn *websocket.Conn) error {
 	response := WebSocketMessage{
 		Type: PongMessageType,
 		Payload: Payload{
-			Message: "nova pong from " + remoteAddr,
+			Message: "agent-matrix pong from " + remoteAddr,
 			Status:  "success",
 		},
 		Timestamp: time.Now(),

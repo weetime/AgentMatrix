@@ -1,4 +1,4 @@
-DOCKER_IMAGE=quanzhenglong.com/camp/nova
+DOCKER_IMAGE=quanzhenglong.com/camp/agent-matrix
 
 CMD_PATH=./cmd/
 BUILD_PATH=./build/
@@ -102,8 +102,8 @@ run_debug:
 
 .PHONY: save_image
 save_image:
-	docker save -o $(BUILD_PATH)nova_release_${VERSION}.tar ${DOCKER_IMAGE}:${VERSION}-${ARCH}; \
-	gzip -f $(BUILD_PATH)nova_release_${VERSION}_${ARCH}.tar; \
+	docker save -o $(BUILD_PATH)agent-matrix_release_${VERSION}.tar ${DOCKER_IMAGE}:${VERSION}-${ARCH}; \
+	gzip -f $(BUILD_PATH)agent-matrix_release_${VERSION}_${ARCH}.tar; \
 
 .PHONY: release
 release:generate linux image save_image

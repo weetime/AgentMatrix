@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
-	"nova/internal/biz"
-	"nova/internal/kit"
-	pb "nova/protos/nova/v1"
+	"github.com/weetime/agent-matrix/internal/biz"
+	"github.com/weetime/agent-matrix/internal/kit"
+	pb "github.com/weetime/agent-matrix/protos/v1"
 
 	"github.com/jinzhu/copier"
 )

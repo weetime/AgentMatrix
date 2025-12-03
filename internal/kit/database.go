@@ -95,7 +95,7 @@ func (dc *DatabaseConfig) buildPostgreSQLConnectionString() string {
 // Format: file:database.db?cache=shared&_fk=1
 func (dc *DatabaseConfig) buildSQLiteConnectionString() string {
 	if dc.Database == "" {
-		dc.Database = "./nova.db"
+		dc.Database = "./agent-matrix.db"
 	}
 
 	// Add file: prefix if not present.

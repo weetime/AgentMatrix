@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"strings"
 
-	"nova/internal/data/ent"
-	"nova/internal/kit"
+	"github.com/weetime/agent-matrix/internal/data/ent"
+	"github.com/weetime/agent-matrix/internal/kit"
 
 	"entgo.io/ent/dialect/sql"
 )

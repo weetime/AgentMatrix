@@ -1,7 +1,7 @@
 package service
 
 import (
-	pb "nova/protos/nova/v1"
+	pb "github.com/weetime/agent-matrix/protos/v1"
 
 	"github.com/google/wire"
 )

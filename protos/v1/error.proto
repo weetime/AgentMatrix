@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package nova.v1;
+package v1;
 import "errors/errors.proto";
 
-option go_package = "protos/nova/v1;v1";
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
 enum TaskErrorReason {
   option (errors.default_code) = 500;
   INVALID_ARGUMENT = 0 [(errors.code) = 521];

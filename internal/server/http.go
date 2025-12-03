@@ -1,9 +1,9 @@
 package server
 
 import (
-	"nova/internal/conf"
-	"nova/internal/service"
-	v1 "nova/protos/nova/v1"
+	"github.com/weetime/agent-matrix/internal/conf"
+	"github.com/weetime/agent-matrix/internal/service"
+	v1 "github.com/weetime/agent-matrix/protos/v1"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/logging"

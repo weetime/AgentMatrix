@@ -3,7 +3,7 @@ package kit_test
 import (
 	"testing"
 
-	"nova/internal/kit"
+	"github.com/weetime/agent-matrix/internal/kit"
 
 	"github.com/stretchr/testify/assert"
 )

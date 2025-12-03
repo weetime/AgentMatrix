@@ -3,7 +3,7 @@ package service
 import (
 	"net/http"
 
-	"nova/internal/kit"
+	"github.com/weetime/agent-matrix/internal/kit"
 )
 
 func WebSocketHandler(w http.ResponseWriter, r *http.Request) {

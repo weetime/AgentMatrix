@@ -500,7 +500,7 @@ manager-api-go/
 │       ├── log.go                     # 日志工具
 │       └── validate.go                # 参数验证
 ├── protos/                            # Proto 定义
-│   └── nova/v1/
+│   └── agent-matrix/v1/
 │       ├── config.proto               # ✅ Phase 0: 配置服务
 │       ├── params.proto               # ✅ Phase 0: 参数管理服务
 │       ├── device.proto               # Phase 2: 设备服务

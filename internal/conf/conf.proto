@@ -1,7 +1,7 @@
 syntax = "proto3";
 package rocky.api;
 
-option go_package = "nova/internal/conf;conf";
+option go_package = "github.com/weetime/agent-matrix/internal/conf;conf";
 
 import "google/protobuf/duration.proto";
 import "validate/validate.proto";

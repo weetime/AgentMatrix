@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"nova/internal/kit"
-	"nova/internal/kit/cerrors"
+	"github.com/weetime/agent-matrix/internal/kit"
+	"github.com/weetime/agent-matrix/internal/kit/cerrors"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/golang/protobuf/ptypes/wrappers"

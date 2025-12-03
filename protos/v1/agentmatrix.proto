@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package nova.v1;
+package v1;
 
-option go_package = "protos/nova/v1;v1";
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
 import "google/protobuf/struct.proto";
 import "validate/validate.proto";
 

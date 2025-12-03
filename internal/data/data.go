@@ -2,9 +2,9 @@ package data
 
 import (
 	"fmt"
-	"nova/internal/conf"
-	"nova/internal/data/ent"
-	"nova/internal/kit"
+	"github.com/weetime/agent-matrix/internal/conf"
+	"github.com/weetime/agent-matrix/internal/data/ent"
+	"github.com/weetime/agent-matrix/internal/kit"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/XSAM/otelsql"
@@ -31,7 +31,7 @@ type Data struct {
 }
 
 func NewData(conf *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
-	log := log.NewHelper(log.With(logger, "module", "nova-service/data"))
+	log := log.NewHelper(log.With(logger, "module", "agent-matrix-service/data"))
 
 	var options []ent.Option
 

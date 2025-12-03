@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"nova/internal/biz"
-	pb "nova/protos/nova/v1"
+	"github.com/weetime/agent-matrix/internal/biz"
+	pb "github.com/weetime/agent-matrix/protos/v1"
 
 	"google.golang.org/protobuf/types/known/structpb"
 )

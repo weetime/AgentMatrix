@@ -5,8 +5,8 @@ import (
 	"flag"
 	"time"
 
-	"nova/internal/conf"
-	_ "nova/internal/data/ent/runtime"
+	"github.com/weetime/agent-matrix/internal/conf"
+	_ "github.com/weetime/agent-matrix/internal/data/ent/runtime"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"

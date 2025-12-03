@@ -1,0 +1,27 @@
+app:
+  name: agent-matrix
+  id: agent-matrix
+  version: v1.0
+  env: dev
+  log_level: -1
+server:
+  http:
+    addr: 0.0.0.0:8010
+    timeout: 10s
+  grpc:
+    addr: 0.0.0.0:9010
+    timeout: 10s
+data:
+  database:
+    driver: mysql
+    source: root:you_password@tcp(127.0.0.1:3306)/agent-matrix?charset=utf8mb4&parseTime=True&loc=Local
+    debug: false
+  redis:
+    addr: 127.0.0.1:6379
+    read_timeout: 0.2s
+    write_timeout: 0.2s
+    password: your_password
+trace:
+  disable: true
+  batcher: otlpgrpc
+  endpoint: "your_endpoint"

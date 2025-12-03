@@ -3,8 +3,8 @@ package data
 import (
 	"context"
 
-	"nova/internal/biz"
-	"nova/internal/data/ent/sysparams"
+	"github.com/weetime/agent-matrix/internal/biz"
+	"github.com/weetime/agent-matrix/internal/data/ent/sysparams"
 
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -18,7 +18,7 @@ type configRepo struct {
 func NewConfigRepo(data *Data, logger log.Logger) biz.ConfigRepo {
 	return &configRepo{
 		data: data,
-		log:  log.NewHelper(log.With(logger, "module", "nova-service/data/config")),
+		log:  log.NewHelper(log.With(logger, "module", "agent-matrix-service/data/config")),
 	}
 }
 

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"nova/internal/conf"
+	"github.com/weetime/agent-matrix/internal/conf"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/redis/go-redis/v9"
@@ -20,7 +20,7 @@ type RedisClient struct {
 
 // NewRedisClient 创建 Redis 客户端
 func NewRedisClient(conf *conf.Bootstrap, logger log.Logger) (*RedisClient, func(), error) {
-	log := log.NewHelper(log.With(logger, "module", "nova-service/redis"))
+	log := log.NewHelper(log.With(logger, "module", "agent-matrix-service/redis"))
 
 	opts := &redis.Options{
 		Addr:         conf.Data.Redis.Addr,

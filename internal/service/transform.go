@@ -1,9 +1,9 @@
 package service
 
 import (
-	"nova/internal/kit"
+	"github.com/weetime/agent-matrix/internal/kit"
 
-	v1 "nova/protos/nova/v1"
+	v1 "github.com/weetime/agent-matrix/protos/v1"
 )
 
 func apiToPageRequest(to *kit.PageRequest, from *v1.PageRequest) {

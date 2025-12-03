@@ -54,4 +54,4 @@ linters-settings:
     # recommend 10-20
     min-complexity: 50
   goimports:
-    local-prefixes: nova
+    local-prefixes: agent-matrix

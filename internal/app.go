@@ -4,8 +4,8 @@ import (
 	"context"
 	"os"
 
-	"nova/internal/conf"
-	"nova/internal/kit/trace"
+	"github.com/weetime/agent-matrix/internal/conf"
+	"github.com/weetime/agent-matrix/internal/kit/trace"
 
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"

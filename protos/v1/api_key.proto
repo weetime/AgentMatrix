@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package nova.v1;
+package v1;
 
-option go_package = "protos/nova/v1;v1";
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
 
-import "protos/nova/v1/nova.proto";
+import "protos/v1/agentmatrix.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "google/protobuf/wrappers.proto";

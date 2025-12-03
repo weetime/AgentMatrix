@@ -7,12 +7,12 @@ package main
 import (
 	"context"
 
-	"nova/internal"
-	"nova/internal/biz"
-	"nova/internal/data"
-	"nova/internal/hook"
-	"nova/internal/server"
-	"nova/internal/service"
+	"github.com/weetime/agent-matrix/internal"
+	"github.com/weetime/agent-matrix/internal/biz"
+	"github.com/weetime/agent-matrix/internal/data"
+	"github.com/weetime/agent-matrix/internal/hook"
+	"github.com/weetime/agent-matrix/internal/server"
+	"github.com/weetime/agent-matrix/internal/service"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/google/wire"

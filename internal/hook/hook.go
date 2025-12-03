@@ -3,8 +3,8 @@ package hook
 import (
 	"context"
 
-	"nova/internal"
-	"nova/internal/kit"
+	"github.com/weetime/agent-matrix/internal"
+	"github.com/weetime/agent-matrix/internal/kit"
 
 	"github.com/google/wire"
 )

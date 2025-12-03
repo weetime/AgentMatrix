@@ -3,10 +3,10 @@ package data
 import (
 	"context"
 
-	"nova/internal/biz"
-	"nova/internal/data/ent"
-	"nova/internal/data/ent/apikey"
-	"nova/internal/kit"
+	"github.com/weetime/agent-matrix/internal/biz"
+	"github.com/weetime/agent-matrix/internal/data/ent"
+	"github.com/weetime/agent-matrix/internal/data/ent/apikey"
+	"github.com/weetime/agent-matrix/internal/kit"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
