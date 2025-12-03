@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package nova.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "protos/nova/v1;v1";
+
+// ConfigService 配置服务
+service ConfigService {
+  // GetServerConfig 获取服务器配置
+  rpc GetServerConfig(GetServerConfigRequest) returns (GetServerConfigResponse) {
+    option (google.api.http) = {
+      post: "/config/server-base"
+      body: "*"
+    };
+  }
+}
+
+// GetServerConfigRequest 获取服务器配置请求
+message GetServerConfigRequest {
+  // is_cache 是否从缓存读取（可选，默认 true）
+  bool is_cache = 1;
+}
+
+// GetServerConfigResponse 获取服务器配置响应
+message GetServerConfigResponse {
+  // config 配置信息（JSON 对象）
+  google.protobuf.Struct config = 1;
+}
+

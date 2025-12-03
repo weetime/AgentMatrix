@@ -1,0 +1,24 @@
+.DS_Store
+.vscode
+.idea
+.nocalhost/.env_lock
+.scannerwork/
+build/
+*.pb.go
+*.pb.validate.go
+internal/data/ent/*
+!internal/data/ent/schema
+*wire_gen.go
+openapi.yaml
+coverage.out
+.cursor
+/.env*
+
+# IDE debug files
+__debug_bin*
+*.debug
+*.exe
+
+# Snyk Security Extension - AI Rules (auto-generated)
+.cursor/rules/snyk_rules.mdc
+config/

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package httputil;
+option go_package = "github.com/go-kratos/kratos/v2/util/httputil;httputil";
+option java_multiple_files = true;
+option java_package = "net.haodf.git.go.rocky.httputil";
+
+message Empty {
+}
+message String {
+    string Value =  1;
+}
+message Int64 {
+    sint64 Value =  1;
+}
+message Int32 {
+    sint32 Value =  1;
+}
+message Bool {
+    bool Value =  1;
+}
+message Id {
+  uint32 Value =  1;
+}
+message StringMap {
+    map<string, string> Value =  1;
+}
+message StringArray {
+    repeated string Value =  1;
+}
+// Globale Response
+message Result {
+  sint32 code = 1;
+  map<string, string> data = 2;
+  string msg = 3;
+}
+// K-V
+message Pair {
+    string key = 1;
+    string Value =  2;
+}

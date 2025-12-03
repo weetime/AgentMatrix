@@ -1,0 +1,1283 @@
+syntax = "proto3";
+
+package nova.v1;
+
+option go_package = "protos/nova/v1;v1";
+import "google/protobuf/struct.proto";
+import "validate/validate.proto";
+
+message Empty {}
+
+message ID {
+  int64 id = 1[json_name = "id"];
+}
+
+message OK {
+  bool ok = 1;
+  string error = 2;
+}
+
+message UUID {
+  string uuid = 1[json_name = "uuid", (validate.rules).string.uuid = true];
+}
+
+message UUIDs {
+  repeated UUID uuids = 1;
+}
+
+message WorkspaceName {
+  string workspaceName = 1;
+}
+
+message ProjectName {
+  string projectName = 1;
+}
+
+message Owner {
+  string ownerType = 1;
+  string ownerName = 2;
+}
+
+message PageRequest {
+  enum Sort {
+    ASC = 0;
+    DESC = 1;
+  }
+  Sort sort = 1;
+  string sortField = 2;
+  int64 pageSize = 3;
+  oneof way {
+    int64 pageNo = 4;
+    int64 cursorID = 5;
+  }
+}
+
+message Total {
+  int64 total = 1;
+}
+
+message KeyValue {
+  string name = 1;
+  string value = 2;
+}
+
+message HTTPService {
+  string name = 1;
+  int32 port = 2;
+  bool enabledRewrite = 3;
+}
+
+message TCPService {
+  string name = 1;
+  int32 port = 2;
+  int32 nodePort = 3;
+}
+
+message ShmConfig {
+  bool enabled = 1;
+  string device = 2;
+  string size = 3;
+}
+
+message AuthConfig {
+  string authScope = 1;
+  repeated string workspaceNames = 2;
+  repeated WorkspaceProject workspaceProjects = 3;
+  repeated WorkspaceUser workspaceUsers = 4;
+}
+
+message Instance {
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string status = 3;
+  int64 flavorId = 4;
+  string flavorUUID = 5;
+  int64 imageId = 6;
+  string imageUUID = 7;
+  repeated KeyValue tags = 9;
+  bool isSynced = 10;
+  bool isDeleted = 11;
+  string createdAt = 12;
+  string taskName = 13;
+  string name = 14;
+  string creator = 15;
+  string workspaceName = 16;
+  string namespace = 17;
+  string values = 18;
+  string statusText = 19;
+  string eventStatus = 20;
+  string eventStatusText = 21;
+  InstanceEdges edges = 22;
+  string cpuUtil = 23;
+  string memUtil = 24;
+  string gpuUtil = 25;
+  string gpuMemUtil = 26;
+}
+
+message DataStorage {
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string aliasName = 4;
+  string path = 5;
+  string scope = 6;
+  string mode = 7;
+  string storageType = 8;
+  int64 storageEngineId = 9;
+  string creator = 10;
+  string workspaceName = 11;
+  string namespace = 12;
+  bool isDeleted = 13;
+  bool isEnabled = 14;
+  bool isSystem = 15;
+  string storageClassName = 16;
+  repeated string accessModes = 17;
+  bool readOnly = 18;
+  string remotePath = 19;
+  string size = 20;
+  repeated MatchLabel matchLabels = 21;
+  DataStorageEdges edges = 22;
+}
+
+message DataStorageNoEdge {
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string aliasName = 4;
+  string path = 5;
+  string scope = 6;
+  string mode = 7;
+  string storageType = 8;
+  int64 storageEngineId = 9;
+  string storageEngineUUID = 10;
+  string creator = 11;
+  string workspaceName = 12;
+  string namespace = 13;
+  bool isDeleted = 14;
+  bool isEnabled = 15;
+  bool isSystem = 16;
+}
+
+message StorageEngine {
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string aliasName = 4;
+  string scope = 5;
+  string storageType = 6;
+  string remoteServer = 7;
+  string storageClassName = 8;
+  string creator = 9;
+  string workspaceName = 10;
+  string namespace = 11;
+  bool isDeleted = 12;
+  bool isEnabled = 13;
+  StorageEngineEdges edges = 14;
+}
+
+message NfsConfiguration {
+  string server = 1;
+  string path = 2;
+}
+
+message JuicefsConfiguration {
+  string metaURL = 1;
+  string path = 2;
+}
+
+message MatchLabel {
+  string key = 1;
+  string value = 2;
+}
+
+message LocalConfiguration {
+  repeated MatchLabel matchLabels = 1;
+  string path = 2;
+}
+
+message GpuFlavor {
+	string cardManufacturer = 1;
+	string cardType = 2;
+	int64 coresPerVGpu = 3;
+	int64 memoryPerVGpu = 4;
+	int64 vgpuCount = 5;
+  string usageMode = 6;
+}
+
+message Flavor {
+  message Instance {
+    int64 id = 1[json_name = "id"];
+    string uuid = 2[json_name = "uuid"];
+    string status = 3;
+    int64 flavorId = 4;
+    string flavorUUID = 5;
+    int64 imageId = 6;
+    string imageUUID = 7;
+    repeated KeyValue tags = 9;
+    bool isSynced = 10;
+    bool isDeleted = 11;
+    string createdAt = 12;
+    string taskName = 13;
+    string name = 14;
+    string creator = 15;
+    string workspaceName = 16;
+    string namespace = 17;
+    string statusText = 18;
+  }
+  message FlavorEdges {
+    repeated Instance instances = 1;
+  }
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string description = 4;
+  int64 vcpus = 5;
+  int64 ram = 6;
+  int64 disk = 7;
+  string type = 8;
+  string arch = 9;
+  string type_text = 10;
+  string gpuFlavorName = 11;
+  GpuFlavor gpuFlavorInfo = 12;
+  bool isDeleted = 13;
+  bool isEnabled = 14;
+  string cardManufacturer = 15;
+  string cardType = 16;
+  FlavorEdges edges = 17;
+}
+
+message FlavorNoEdge {
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string description = 4;
+  int64 vcpus = 5;
+  int64 ram = 6;
+  int64 disk = 7;
+  string type = 8;
+  string arch = 9;
+  string type_text = 10;
+  string gpuFlavorName = 11;
+  GpuFlavor gpuFlavorInfo = 12;
+  bool isDeleted = 13;
+  bool isEnabled = 14;
+  string cardManufacturer = 15;
+  string cardType = 16;
+}
+
+message Image {
+  message Inference {
+    int64 id = 1;
+    string uuid = 2;
+    string taskName = 3;
+    string name = 4;
+    string creator = 5;
+    string workspaceName = 6;
+    string namespace = 7;
+    string status = 8;
+    string statusText = 9;
+  }
+  message InferenceVersionEdges {
+    Inference inference = 1;
+  }
+  message InferenceVersion {
+    int64 id = 1;
+    string uuid = 2;
+    int64 version = 3;
+    int64 inferenceId = 4;
+    AuthConfig authConfig = 5;
+    string inferenceEngine = 6;
+    InferenceVersionEdges edges = 7;
+  }
+  message ImageEdges {
+    Repository repository = 1;
+    repeated Instance instances = 2;
+    repeated TrainingJob trainingJobs = 3;
+    repeated InferenceVersion inferenceVersions = 4;
+    Registry registry = 5;
+  }
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string category = 4;
+  int64 registryID = 5;
+  int64 repositoryID = 6;
+  string artifact = 7;
+  string type = 8;
+  repeated string arch = 9;
+  int64 size = 10;
+  string detail = 11;
+  string creator = 12;
+  string workspaceName = 13;
+  string namespace = 14;
+  bool isDeleted = 15;
+  bool isEnabled = 16;
+  bool isSynced = 17;
+  string createdAt = 18;
+  ImageEdges edges = 19;
+}
+
+message Label {
+  int64 id = 1;
+  string uuid = 2;
+  string name = 3;
+  string category = 4;
+  bool isEnabled = 5;
+  string categoryToLabel = 6;
+}
+
+message Labels {
+  repeated Label list = 1;
+}
+
+message Repository {
+  message RepositoryEdges {
+    repeated Image images = 1;
+    Registry registry = 2;
+    Secret secret = 3;
+    repeated Label labels = 4;
+  }
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string aliasName = 4;
+  string category = 5;
+  int64 registryID = 6;
+  int64 secretID = 7;
+  string type = 8;
+  string description = 9;
+  string creator = 10;
+  string workspaceName = 11;
+  string namespace = 12;
+  bool isDeleted = 13;
+  string createdAt = 14;
+  bool isSynced = 15;
+  RepositoryEdges edges = 16;
+}
+
+message RepositoryNoEdge {
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string aliasName = 4;
+  string category = 5;
+  int64 registryID = 6;
+  int64 secretID = 7;
+  string type = 8;
+  string description = 9;
+  string creator = 10;
+  string workspaceName = 11;
+  string namespace = 12;
+  bool isDeleted = 13;
+  string createdAt = 14;
+  bool isSynced = 15;
+}
+
+message Quota {
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string creator = 3;
+  string ownerName = 4;
+  string ownerType = 5;
+  int64 vcpus = 6;
+  int64 ram = 7;
+  int64 usedVcpus = 8;
+  int64 usedRAM = 9;
+  TypedGPUQuota gpu = 10;
+  bool isDeleted = 11;
+  string createdAt = 12;
+  string updatedAt = 13;
+  QuotaEdges edges = 14;
+}
+
+message QuotaEdges {
+  Quota parent = 1;
+}
+
+message TypedGPUQuota {
+  repeated GPUQuota shared = 1;
+  repeated GPUQuota private = 2;
+}
+
+message GPUQuota {
+  string manufacturer = 1;
+  string cardType = 2;
+  int64 vgpuCount = 3;
+  int64 cores = 4;
+  int64 memory = 5;
+  int64 usedVgpuCount = 6;
+  int64 usedCores = 7;
+  int64 usedMemory = 8;
+}
+
+message InstanceEdges {
+  Flavor flavor = 1;
+	Image image = 2;
+  repeated DataStorage dataStorages = 3;
+  repeated Secret secrets = 4;
+  repeated StatusCondition statusConditions = 5;
+}
+
+message DataStorageEdges {
+  message Instance {
+    int64 id = 1[json_name = "id"];
+    string uuid = 2[json_name = "uuid"];
+    string status = 3;
+    string workspaceName = 4;
+    string namespace = 5;
+    string creator = 6;
+    string taskName = 7;
+    string name = 8;
+    string statusText = 9;
+  }
+  message TrainingJob {
+    int64 id = 1[json_name = "id"];
+    string uuid = 2[json_name = "uuid"];
+    string name = 3;
+    string taskName = 4;
+    string creator = 5;
+    string status = 6;
+    string workspaceName = 7;
+    string namespace = 8;
+    string statusText = 9;
+  }
+  message Inference {
+    int64 id = 1;
+    string uuid = 2;
+    string taskName = 3;
+    string name = 4;
+    string creator = 5;
+    string workspaceName = 6;
+    string namespace = 7;
+    string status = 8;
+    string statusText = 9;
+  }
+  message InferenceVersionEdges {
+    Inference inference = 1;
+  }
+  message InferenceVersion {
+    int64 id = 1;
+    string uuid = 2;
+    int64 version = 3;
+    int64 inferenceId = 4;
+    AuthConfig authConfig = 5;
+    InferenceVersionEdges edges = 6;
+  }
+  repeated Instance instances = 1;
+  StorageEngine storageEngine = 2;
+  repeated TrainingJob trainingJobs = 3;
+  repeated InferenceVersion inferenceVersions = 4;
+}
+
+message StorageEngineEdges {
+  repeated DataStorage dataStorages = 1;
+}
+
+message Registry {
+  message RegistryEdges {
+    repeated Repository repositories = 1;
+    repeated Image images = 2;
+  }
+  message Repository {
+    string uuid = 1[json_name = "uuid"];
+    string name = 2;
+    string aliasName = 3;
+    string category = 4;
+    string type = 5;
+    string description = 6;
+    string creator = 7;
+    string workspaceName = 8;
+    string namespace = 9;
+    string createdAt = 10;
+  }
+  message Image {
+    string uuid = 1[json_name = "uuid"];
+    string name = 2;
+    string category = 3;
+    string artifact = 4;
+    string type = 5;
+    string detail = 6;
+    string creator = 7;
+    string workspaceName = 8;
+    string namespace = 9;
+    bool isEnabled = 10;
+    bool isSynced = 11;
+    string createdAt = 12;
+  }
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string domain = 4;
+  string type = 5;
+  bool isDeleted = 6;
+  bool isEnabled = 7;
+  bool insecureSkipVerify = 8;
+  string createdAt = 9;
+  RegistryEdges edges = 10;
+}
+
+message VolcanoConfigmap {
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string namespace = 4;
+  string configKey = 5;
+  string actions = 6;
+  repeated VolcanoConfigmapTierPlugin strategy = 7;
+  repeated VolcanoConfigmapTierPlugin algorithm = 8;
+  string createdAt = 9;
+  string updatedAt = 10;
+  string version = 11;
+  int64 templateID = 12;
+  bool isEnabled = 13;
+}
+
+message VolcanoConfigmapTierPlugin {
+  string name = 1;
+  optional bool enableJobOrder = 2;
+  optional bool enableHierarchy = 3;
+  optional bool enableJobReady = 4;
+  optional bool enableJobPipelined = 5;
+  optional bool enableTaskOrder = 6;
+  optional bool enablePreemptable = 7;
+  optional bool enableReclaimable = 8;
+  optional bool enablePreemptive = 9;
+  optional bool enableQueueOrder = 10;
+  optional bool EnabledClusterOrder = 11;
+  optional bool enablePredicate = 12;
+  optional bool enableBestNode = 13;
+  optional bool enableNodeOrder = 14;
+  optional bool enableTargetJob = 15;
+  optional bool enableReservedNodes = 16;
+  optional bool enableJobEnqueued = 17;
+  optional bool enabledVictim = 18;
+  optional bool enableJobStarving = 19;
+  optional bool enabledOverused = 20;
+  optional bool enabledAllocatable = 21;
+  map<string, google.protobuf.Value> arguments = 22;
+}
+
+message VolcanoQueue {
+  message VolcanoQueueEdges {
+    repeated VolcanoQueueWorkspace volcanoQueueWorkspaces = 1;
+    repeated TrainingJob trainingJobs = 2;
+  }
+  int64 id = 1;
+  string uuid = 2;
+  string name = 3;
+  string aliasName = 4;
+  bool reclaimable = 5;
+  double weight = 6;
+  map<string, google.protobuf.Value> status = 7;
+  string creator = 8;
+  bool isDeleted = 9;
+  string createdAt = 10;
+  string updatedAt = 11;
+  string syncedAt = 12;
+  VolcanoQueueEdges edges = 13;
+}
+
+message VolcanoQueueWorkspace {
+  int64 id = 1;
+  string uuid = 2;
+  int64 volcanoQueueID = 3;
+  string workspaceName = 4;
+  string createdAt = 5;
+}
+
+message TrainingJob {
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string taskName = 4;
+  string framework = 5;
+  string creator = 6;
+  string status = 7;
+  int64 flavorId = 8;
+  int64 imageId = 9;
+  repeated KeyValue tags = 10;
+  int64 queueId = 11;
+  string queueName = 12;
+  string priorityClassName = 13;
+  string workspaceName = 14;
+  string namespace = 15;
+  string values = 16;
+  bool isSynced = 17;
+  bool isDeleted = 18;
+  string createdAt = 19;
+  string updatedAt = 20;
+  string firstRunningAt = 21;
+  string finishedAt = 22;
+  repeated int64 storageIds = 23;
+  TrainingJobEdges edges = 24;
+  string statusText = 25;
+  string cpuUtil = 26;
+  string memUtil = 27;
+  string gpuUtil = 28;
+  string gpuMemUtil = 29;
+}
+
+message TrainingJobEdges {
+  Flavor flavor = 1;
+  Image image = 2;
+  repeated DataStorage dataStorages = 3;
+  VolcanoQueue queue = 4;
+  repeated StatusCondition statusConditions = 5;
+}
+
+message Secret {
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string description = 4;
+  string scope = 5;
+  string type = 6;
+  string creator = 7;
+  string workspaceName = 8;
+  string namespace = 9;
+  bool isEnabled = 10;
+  bool isDeleted = 11;
+  string createdAt = 12;
+  SecretEdges edges = 13;
+}
+
+
+message SecretNoEdge {
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string description = 4;
+  string scope = 5;
+  string type = 6;
+  string creator = 7;
+  string workspaceName = 8;
+  string namespace = 9;
+  bool isEnabled = 10;
+  bool isDeleted = 11;
+  string createdAt = 12;
+}
+
+message DetailSecret {
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string description = 4;
+  string scope = 5;
+  string type = 6;
+  SecretData data = 7;
+  string creator = 8;
+  string workspaceName = 9;
+  string namespace = 10;
+  bool isDeleted = 11;
+  string createdAt = 12;
+  SecretEdges edges = 13;
+}
+
+message SecretData {
+  SecretDataSSH ssh = 1;
+  SecretDataAccount account = 2;
+  SecretDataSWR swr = 3;
+  SecretDataTLS tls = 4;
+}
+
+message SecretDataSSH {
+  string publicKey = 1;
+}
+
+message SecretDataAccount {
+  string username = 1;
+  string password = 2;
+}
+
+message SecretDataSWR {
+  string accessKey = 1;
+  string secretKey = 2;
+  string regionID = 3;
+}
+
+message SecretDataTLS {
+  // TODO
+}
+
+message SecretEdges {
+  repeated Instance instances = 1;
+  repeated Repository repositories = 2;
+}
+
+message Event {
+  string uuid = 1;
+  string ownerType = 2;
+  string ownerUuid = 3;
+  string objectKind = 4;
+  string objectName = 5;
+  int32 count = 6;
+  string firstTimestamp = 7;
+  string lastTimestamp = 8;
+  string type = 9;
+  string reason = 10;
+  string message = 11;
+  string sourceComponent = 12;
+}
+
+message StatusCondition {
+  int64 id = 1;
+  string ownerType = 2;
+  string ownerUUID = 3;
+  string status = 4;
+  string message = 5;
+  string lastTransitionTime = 6;
+  string statusText = 7;
+}
+
+message PodDetail {
+  string name = 1;
+  string ip = 2;
+  string status = 3;
+  string nodeName = 4;
+  string nodeIP = 5;
+  string detail = 6;
+  string createdAt = 7;
+  string updatedAt = 8;
+  string statusText = 9;
+}
+
+message PodDetails {
+  repeated PodDetail list = 1;
+}
+
+message TensorboardReq {
+  repeated string uuids = 1[json_name = "uuids"];
+  string creator = 2;
+  string httpServerDomain = 3;
+}
+
+message Card {
+  string manufacturer = 1;
+  string model = 2;
+  string alias = 3;
+  string gpuID = 4;
+  string nodeName = 5;
+  string nodeMode = 6;
+  string templateName = 7;
+  string devicePlugin = 8;
+  bool isInUse = 9;
+}
+
+message ResourcePool {
+  string name = 1;
+  string workspaceName = 2;
+  string gpuAllocationMode = 3;
+  repeated Card cards = 4;
+}
+
+message Billing {
+  int64 id = 1;
+  string uuid = 2;
+  string level = 3;
+  string resource = 4;
+  string name = 5;
+  string workspaceName = 6;
+  string description = 7;
+  BillingData data = 8;
+  int64 cost = 9;
+  int64 period = 10;
+  bool isDeleted = 11;
+  string createdAt = 12;
+  string updatedAt = 13;
+}
+
+message BillingData {
+  BillingDataGPU gpu = 1;
+  BillingDataModel model = 2;
+}
+
+message BillingDataGPU {
+  string gpuMode = 1;
+  string manufacturer = 2;
+  string cardType = 3;
+}
+
+message BillingDataModel {
+  string manufacturer = 1;
+	string model = 2;
+}
+
+message BillRecord {
+  int64 id = 1;
+  string uuid = 2;
+  string resource = 3;
+  string objectUUID = 4;
+  int64 flavorId = 5;
+  int64 cpuAmount = 6;
+  int64 allocatedCPU = 7;
+  int64 memoryAmount = 8;
+  int64 allocatedMemory = 9;
+  int64 gpuAmount = 10;
+  string allocatedGPUCardManufacturer = 11;
+  string allocatedGPUCardType = 12;
+  int64 allocatedGPUCores = 13;
+  int64 allocatedGPUMemory = 14;
+  int64 allocatedGPUCount = 15;
+  int64 totalAmount = 16;
+  string workspaceName = 17;
+  string workspaceAliasName = 18;
+  string namespace = 19;
+  string namespaceAliasName = 20;
+  string creator = 21;
+  string statisDate = 22;
+  string statisMonth = 23;
+  string createdAt = 24;
+  string updatedAt = 25;
+  BillRecordEdges edges = 26;
+  string objectType = 27;
+  string objectTypeText = 28;
+  string objectName = 29;
+  string objectTaskName = 30;
+}
+
+message BillRecordEdges {
+  Flavor flavor = 1;
+}
+
+message WorkspaceProject {
+  string workspaceName = 1;
+  repeated string projectNames = 2;
+}
+
+message WorkspaceUser {
+  string workspaceName = 1;
+  repeated string userNames = 2;
+}
+
+message AutoScaler {
+	bool enabled = 1;
+	CronScale cronScale = 2;
+	HPA hpa = 3;
+}
+
+message CronScale {
+	repeated CronScaleItem items = 1;
+}
+
+message CronScaleItem {
+	string name = 1;
+	int64 targetReplicas = 2;
+	string scaleOnCron = 3;
+	string scaleOffCron = 4;
+}
+
+message HPA {
+	int32 minReplicas = 1;
+	int32 maxReplicas = 2;
+	repeated HPAMetric metrics = 3;
+	ScalePolicy scaleUp = 4;
+	ScalePolicy scaleDown = 5;
+}
+
+message HPAMetric {
+  string metricType = 1;
+  string metricName = 2;
+  int64 target = 3;
+}
+
+message ScalePolicy {
+	int64 stabilizationWindowSeconds = 1;
+	int64 value = 2;
+	int64 periodSeconds = 3;
+}
+
+message Inferences {
+  repeated Inference list = 1;
+}
+
+message LWSConfig {
+  bool disableRDMA = 1;
+  int32 size = 2;
+  StatefulsetTemplate leaderTemplate = 3;
+  StatefulsetTemplate workerTemplate = 4;
+}
+
+message Inference {
+  int64 id = 1;
+  string uuid = 2;
+  string creator = 3;
+  string workspaceName = 4;
+  string namespace = 5;
+
+  string taskName = 6;
+  string name = 7;
+  string values = 8;
+  string inferenceEngine = 9;
+  string deployType = 10;
+  int64 replicas = 11;
+  int64 maxUnavailable = 12;
+  StatefulsetTemplate statefulset = 13;
+  LWSConfig lws = 14;
+  ShmConfig shmConfig = 15;
+  repeated HTTPService extraHttpServices = 16;
+  repeated TCPService extraTCPServices = 17;
+  AutoScaler autoScaler = 18;
+  ExternalImages externalImages = 19;
+  AuthConfig authConfig = 20;
+  int64 flavorId = 21;
+  string flavorUUID = 22;
+  int64 imageId = 23;
+  string imageUUID = 24;
+  int64 modelId = 25;
+  string modelUUID = 26;
+  repeated int64 storageIds = 27;
+  string deployTemplateUUID = 28;
+  string cpuUtil = 29;
+  string memUtil = 30;
+  string gpuUtil = 31;
+  string gpuMemUtil = 32;
+  string status = 33;
+  string statusText = 34;
+  string createdAt = 35;
+  string updatedAt = 36;
+  bool isDeleted = 37;
+  InferenceEdges edges = 38;
+}
+
+message InferenceEdges {
+  FlavorNoEdge flavor = 1;
+	Image image = 2;
+  DeployTemplate deployTemplate = 3;
+  repeated DataStorageNoEdge dataStorages = 4;
+  repeated StatusCondition statusConditions = 5;
+  repeated InferenceVersion inferenceVersions = 6;
+  InferenceVersion currentInferenceVersion = 7;
+}
+
+message InferenceVersion {
+  int64 id = 1;
+  string uuid = 2;
+  int64 version = 3;
+  int64 inferenceId = 4;
+  string deployType = 5;
+  string inferenceEngine = 6;
+  int64 replicas = 7;
+  int64 maxUnavailable = 8;
+  StatefulsetTemplate statefulset = 9;
+  LWSConfig lws = 10;
+  ShmConfig shmConfig = 11;
+  repeated HTTPService extraHttpServices = 12;
+  repeated TCPService extraTCPServices = 13;
+  AutoScaler autoScaler = 14;
+  ExternalImages externalImages = 15;
+  AuthConfig authConfig = 16;
+  int64 flavorId = 17;
+  string flavorUUID = 18;
+  int64 imageId = 19;
+  string imageUUID = 20;
+  int64 modelId = 21;
+  string modelUUID = 22;
+  int64 deployTemplateId = 23;
+  string deployTemplateUUID = 24;
+  string values = 25;
+  bool isDeleted = 26;
+  string createdAt = 27;
+  string updatedAt = 28;
+  InferenceVersionEdges edges = 29;
+}
+
+message InferenceVersionEdges {
+  FlavorNoEdge flavor = 1;
+	Image image = 2;
+  Model model = 3;
+  repeated DataStorageNoEdge dataStorages = 4;
+  Inference inference = 5;
+  DeployTemplate deployTemplate = 6;
+}
+
+message CustomStorage {
+  string storageEngineUUID = 1;
+  string path = 2;
+}
+
+message Cards {
+  repeated Card list = 1;
+}
+
+message TCPSvcInfo {
+  string name = 1;
+  int32 port = 2;
+  string host = 3;
+}
+
+message ExtraTCPSvcInfo {
+  repeated TCPSvcInfo info = 1;
+}
+
+message InferEngineAndArgs {
+  string inferEngineType = 1;
+  repeated string args = 2;
+  string imageUUID = 3;
+}
+
+message InferEngineAndArgsWithImage {
+  string inferEngineType = 1;
+  repeated string args = 2;
+  string imageUUID = 3;
+  Image image = 4;
+}
+
+message Model {
+  string uuid = 1;
+  string name = 2;
+  string aliasName = 3;
+  string description = 4;
+  string manufacturer = 5;
+  string releaseTime = 6;
+  int64 contextLength = 7;
+  int64 maxOutputTokens = 8;
+  string path = 9;
+  string type = 10;
+  string workspaceName = 11;
+  string projectName = 12;
+  int32 level = 13;
+  bool isEnabled = 14;
+  bool isDeleted = 15;
+  bool isExperienceable = 16;
+  string inferenceName = 17;
+  int64 parameters = 18;
+  string dataType = 19;
+  google.protobuf.Struct configuration = 20;
+  ModelEdges edges = 21;
+}
+
+message ModelEdges {
+  repeated Label labels = 1;
+  repeated DeployTemplate deployTemplates = 2;
+}
+
+message Models {
+  repeated Model list = 1;
+}
+
+message TopNItem {
+  string name = 1;
+  string aliasName = 2;
+  int64 value = 3;
+}
+
+message TopN {
+  repeated TopNItem list = 1;
+}
+
+message CheckFlavorsAvailableRequest {
+  repeated string flavorUUIDs = 1;
+  string projectName = 2;
+}
+
+message CheckFlavorsAvailableForModelRequest {
+  repeated string flavorUUIDs = 1;
+  string projectName = 2;
+  string modelUUID = 3;
+}
+
+message CheckFlavorsAvailableResponse {
+  map<string, CheckFlavorsAvailableDetail> results = 1;
+}
+
+message  CheckFlavorsAvailableDetail {
+  bool enable = 1;
+  string msg = 2;
+}
+
+message SftpUser {
+  int64 id = 1;
+  string uuid = 2;
+  string username = 3;
+  SftpEdges edges = 4;
+  bool isDeleted = 5;
+  string createdAt = 6;
+  string updatedAt = 7;
+}
+
+message SftpSecret {
+  string username = 1;
+  string password = 2;
+}
+
+message SftpEdges {
+  repeated DataStorageNoEdge dataStorages = 1;
+  repeated SecretNoEdge secrets = 2;
+}
+
+message PodGroupDescribe {
+  string describe = 1;
+}
+
+message Workspace {
+  message WorkspaceEdges {
+    repeated Project projects = 1;
+  }
+  message Quota {
+    int64 vcpus = 1;
+    int64 ram = 2;
+    int64 usedVcpus = 3;
+    int64 usedRAM = 4;
+    TypedGPUQuota gpu = 5;
+  }
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string name = 3;
+  string aliasName = 4;
+  string description = 5;
+  bool isDeleted = 6;
+  int64 UserTotal = 7;
+  SummaryResponse summary = 8;
+  Quota quota = 9;
+  WorkspaceEdges edges = 10;
+}
+
+message Project {
+  message Quota {
+    int64 vcpus = 1;
+    int64 ram = 2;
+    int64 usedVcpus = 3;
+    int64 usedRAM = 4;
+    TypedGPUQuota gpu = 5;
+}
+  int64 id = 1[json_name = "id"];
+  string uuid = 2[json_name = "uuid"];
+  string workspaceUUID = 4;
+  string name = 5;
+  string aliasName = 6;
+  string description = 7;
+  bool isDeleted = 8;
+  int64 UserTotal = 9;
+  SummaryResponse summary = 10;
+  Quota quota = 11;
+}
+
+message WorkspaceOverviewResponse {
+  message Quota {
+      int64 vcpus = 1;
+      int64 ram = 2;
+      int64 usedVcpus = 3;
+      int64 usedRAM = 4;
+      TypedGPUQuota gpu = 5;
+  }
+  SummaryResponse summary = 1;
+  Quota quota = 2;
+}
+
+message ProjectOverviewResponse {
+  message Quota {
+      int64 vcpus = 1;
+      int64 ram = 2;
+      int64 usedVcpus = 3;
+      int64 usedRAM = 4;
+      TypedGPUQuota gpu = 5;
+  }
+  SummaryResponse summary = 1;
+  Quota quota = 2;
+}
+
+message SummaryResponse {
+  InstanceStatusCountResponse instance = 1;
+  InstanceStatusCountResponse trainingJob = 2;
+  InstanceStatusCountResponse inference = 3;
+}
+
+message InstanceStatusCountResponse {
+  int64 total = 1;
+  int64 running = 2;
+  int64 pending = 3;
+  int64 failed = 4;
+}
+
+message ExternalImages {
+  bool hasPassword = 1;
+  string artifact = 2;
+  string username = 3;
+  string password = 4;
+  string inferenceEngineType = 5;
+}
+
+message DeployTemplate {
+  int64 id = 1;
+  string uuid = 2;
+  string name = 3;
+  string description = 4;
+  string creator = 5;
+  string type = 6;
+  string inferEngineType = 7;
+  string imageUUID = 8;
+  int32 port = 9;
+  string values = 10;
+  bool isDeleted = 11;
+  bool isEnabled = 12;
+  string createdAt = 13;
+  string updatedAt = 14;
+  DeployTemplateEdges edges = 15;
+
+  Image image = 16;
+  StatefulsetTemplate statefulsetTemplate = 17;
+  LWSTemplate lwsTemplate = 18;
+}
+
+message DeployTemplateEdges {
+  repeated Model models = 1;
+  repeated InferenceVersion inferenceVersions = 2;
+}
+
+message DeployTemplates {
+  repeated DeployTemplate list = 1;
+}
+
+message ContainerArg {
+  string name = 1;
+  string display_name = 2;
+  string type = 3;
+  string value = 4;
+  bool editable = 5;
+  bool removable = 6;
+  string display_type = 7;
+  repeated string options = 8;
+}
+
+message ProbeConfig {
+  bool enabled = 1;
+  HTTPGetAction http_get = 2;
+  int32 initial_delay_seconds = 3;
+  int32 period_seconds = 4;
+  int32 timeout_seconds = 5;
+  int32 success_threshold = 6;
+  int32 failure_threshold = 7;
+}
+
+message HTTPGetAction {
+  string path = 1;
+  int32 port = 2;
+}
+
+message RunUserGroup {
+  bool enabled = 1;
+  int64 run_as_user = 2;
+  int64 run_as_group = 3;
+}
+
+message StatefulsetTemplate {
+  repeated string command = 1;
+  repeated ContainerArg args = 2;
+  repeated KeyValue envs = 3;
+  repeated KeyValue annotations = 4;
+  string working_dir = 5;
+  RunUserGroup run_user_group = 6;
+  ProbeConfig startup_probe = 7;
+  ProbeConfig readiness_probe = 8;
+  ProbeConfig liveness_probe = 9;
+}
+
+message LWSTemplate {
+  bool rdma_showable = 1;
+  StatefulsetTemplate leader_template = 2;
+  StatefulsetTemplate worker_template = 3;
+}
+
+message ContainerArgs {
+  repeated ContainerArg list = 1;
+}

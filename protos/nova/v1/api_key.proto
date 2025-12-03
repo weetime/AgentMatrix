@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package nova.v1;
+
+option go_package = "protos/nova/v1;v1";
+
+import "protos/nova/v1/nova.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/wrappers.proto";
+
+message ApiKey {
+  string uuid = 1;
+  string key = 2;
+  string model = 3;
+  string name = 4;
+  string workspaceName = 5;
+  bool isEnabled = 6;
+  string username = 7;
+}
+
+message ApiKeys {
+  repeated ApiKey list = 1;
+}
+
+message ApiKeySearchParam {
+  google.protobuf.StringValue username = 2;
+  google.protobuf.StringValue workspaceName = 3;
+  google.protobuf.StringValue name = 4;
+  google.protobuf.BoolValue isEnabled = 5;
+}
+
+message ListApiKeyReq {
+  ApiKeySearchParam filters = 1;
+  PageRequest pageRequest = 2;
+}
+
+
+service ApiKeyService {
+  rpc Create (WorkspaceName) returns (ApiKey) {
+    option (google.api.http) = {
+      post: "/v1/api-key"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "创建api_key";
+    };
+  }
+
+  rpc List (ListApiKeyReq) returns (ApiKeys) {
+    option (google.api.http) = {
+      post: "/v1/api-key/search"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取全部api_key";
+    };
+  }
+
+  rpc TotalCount (ListApiKeyReq) returns (Total) {
+    option (google.api.http) = {
+      post: "/v1/api-key/total"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取全部api_key";
+    };
+  }
+
+}

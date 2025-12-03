@@ -1,0 +1,30 @@
+info:
+  contact: {}
+  license: {}
+paths:
+  /hello:
+    get:
+      consumes:
+      - multipart/form-data
+      description: 向你说Hello
+      parameters:
+      - description: 人名
+        in: query
+        name: who
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"msg": "hello Razeen"}'
+          schema:
+            type: string
+        "400":
+          description: '{"msg": "who are you"}'
+          schema:
+            type: string
+      summary: 测试SayHello
+      tags:
+      - 测试
+swagger: "2.0"
