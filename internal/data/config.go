@@ -34,15 +34,14 @@ func (r *configRepo) ListAllParams(ctx context.Context) ([]*biz.SysParam, error)
 	result := make([]*biz.SysParam, len(params))
 	for i, param := range params {
 		result[i] = &biz.SysParam{
-			ID:        param.ID,
-			ParamCode: param.ParamCode,
+			ID:         param.ID,
+			ParamCode:  param.ParamCode,
 			ParamValue: param.ParamValue,
-			ValueType: param.ValueType,
-			ParamType: int8(param.ParamType),
-			Remark:    param.Remark,
+			ValueType:  param.ValueType,
+			ParamType:  int8(param.ParamType),
+			Remark:     param.Remark,
 		}
 	}
 
 	return result, nil
 }
-

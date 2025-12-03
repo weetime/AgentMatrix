@@ -294,7 +294,7 @@
 
 | 方法 | 路径 | 功能 | 权限 | 说明 |
 |------|------|------|------|------|
-| POST | `/config/server-base` | 服务端获取配置 | 公开 | xiaozhi-server 获取系统配置 |
+| POST | `/config/server-base` | 服务端获取配置 | 公开 | ✅ xiaozhi-server 获取系统配置 |
 | POST | `/config/agent-models` | 获取智能体模型 | 公开 | 根据设备 MAC 地址和选择的模块获取模型配置 |
 
 ---

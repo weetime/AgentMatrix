@@ -3,14 +3,14 @@ syntax = "proto3";
 package v1;
 
 import "google/api/annotations.proto";
-import "google/protobuf/struct.proto";
 
+import "protos/v1/agentmatrix.proto";
 option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
 
 // ConfigService 配置服务
 service ConfigService {
   // GetServerConfig 获取服务器配置
-  rpc GetServerConfig(GetServerConfigRequest) returns (GetServerConfigResponse) {
+  rpc GetServerConfig(GetServerConfigRequest) returns (Response) {
     option (google.api.http) = {
       post: "/config/server-base"
       body: "*"
@@ -24,9 +24,4 @@ message GetServerConfigRequest {
   bool is_cache = 1;
 }
 
-// GetServerConfigResponse 获取服务器配置响应
-message GetServerConfigResponse {
-  // config 配置信息（JSON 对象）
-  google.protobuf.Struct config = 1;
-}
 

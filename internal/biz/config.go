@@ -59,6 +59,12 @@ func (uc *ConfigUsecase) GetConfig(ctx context.Context, isCache bool) (map[strin
 		err := uc.redisClient.GetObject(ctx, kit.RedisKeyServerConfig, &cachedConfig)
 		if err == nil && cachedConfig != nil {
 			uc.log.Debug("Config loaded from cache")
+			// 清理 Java 类型信息
+			cleaned := uc.cleanJavaClassInfo(cachedConfig)
+			if cleanedConfig, ok := cleaned.(map[string]interface{}); ok {
+				return cleanedConfig, nil
+			}
+			// 如果类型不匹配，返回原配置
 			return cachedConfig, nil
 		}
 		if err != nil {
@@ -72,12 +78,20 @@ func (uc *ConfigUsecase) GetConfig(ctx context.Context, isCache bool) (map[strin
 		return nil, uc.handleError.ErrInternal(ctx, err)
 	}
 
+	// 清理 Java 类型信息（防止之前缓存的数据污染）
+	cleaned := uc.cleanJavaClassInfo(config)
+	cleanedConfig, ok := cleaned.(map[string]interface{})
+	if !ok {
+		// 如果类型不匹配，使用原配置
+		cleanedConfig = config
+	}
+
 	// 将配置存入 Redis（不设置过期时间，永久缓存）
-	if err := uc.redisClient.SetObject(ctx, kit.RedisKeyServerConfig, config, 0); err != nil {
+	if err := uc.redisClient.SetObject(ctx, kit.RedisKeyServerConfig, cleanedConfig, 0); err != nil {
 		uc.log.Warn("Failed to save config to cache", "error", err)
 	}
 
-	return config, nil
+	return cleanedConfig, nil
 }
 
 // buildConfig 构建配置信息
@@ -167,6 +181,60 @@ func (uc *ConfigUsecase) convertValue(value, valueType string) interface{} {
 	default:
 		// string 类型或其他未知类型，直接返回字符串
 		return value
+	}
+}
+
+// cleanJavaClassInfo 清理 Java 类型信息（@class 字段）
+// 递归清理 map 和 slice 中的 @class 字段
+func (uc *ConfigUsecase) cleanJavaClassInfo(data interface{}) interface{} {
+	switch v := data.(type) {
+	case map[string]interface{}:
+		result := make(map[string]interface{})
+		for key, value := range v {
+			// 跳过 @class 字段
+			if key == "@class" {
+				continue
+			}
+			// 递归清理嵌套结构
+			result[key] = uc.cleanJavaClassInfo(value)
+		}
+		return result
+
+	case []interface{}:
+		// 处理特殊格式：["java.util.ArrayList", [实际数据]]
+		if len(v) == 2 {
+			if typeStr, ok := v[0].(string); ok && strings.HasPrefix(typeStr, "java.util.") {
+				if actualArray, ok := v[1].([]interface{}); ok {
+					// 返回实际的数组，并递归清理
+					return uc.cleanJavaClassInfo(actualArray)
+				}
+			}
+		}
+		// 普通数组处理
+		result := make([]interface{}, 0, len(v))
+		for _, item := range v {
+			// 跳过 Java 类型字符串（如 "java.util.ArrayList"）
+			if str, ok := item.(string); ok && strings.HasPrefix(str, "java.util.") {
+				continue
+			}
+			// 递归清理嵌套结构
+			result = append(result, uc.cleanJavaClassInfo(item))
+		}
+		return result
+
+	case []string:
+		// 处理字符串数组，跳过 Java 类型字符串
+		result := make([]string, 0, len(v))
+		for _, item := range v {
+			if !strings.HasPrefix(item, "java.util.") {
+				result = append(result, item)
+			}
+		}
+		return result
+
+	default:
+		// 其他类型直接返回
+		return data
 	}
 }
 

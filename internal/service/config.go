@@ -21,7 +21,7 @@ func NewConfigService(uc *biz.ConfigUsecase) *ConfigService {
 }
 
 // GetServerConfig 获取服务器配置
-func (s *ConfigService) GetServerConfig(ctx context.Context, req *pb.GetServerConfigRequest) (*pb.GetServerConfigResponse, error) {
+func (s *ConfigService) GetServerConfig(ctx context.Context, req *pb.GetServerConfigRequest) (*pb.Response, error) {
 	// 默认从缓存读取
 	isCache := true
 	if req != nil {
@@ -40,8 +40,10 @@ func (s *ConfigService) GetServerConfig(ctx context.Context, req *pb.GetServerCo
 		return nil, err
 	}
 
-	return &pb.GetServerConfigResponse{
-		Config: configStruct,
+	// 构建统一响应格式
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+		Data: configStruct,
 	}, nil
 }
-
