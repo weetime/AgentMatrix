@@ -1,0 +1,325 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
+
+import "protos/v1/agentmatrix.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/wrappers.proto";
+import "validate/validate.proto";
+
+// AgentDTO 智能体列表项
+message AgentDTO {
+  string id = 1;                    // 智能体ID
+  string agent_name = 2;             // 智能体名称
+  string tts_model_name = 3;         // 语音合成模型名称
+  string tts_voice_name = 4;         // 音色名称
+  string llm_model_name = 5;         // 大语言模型名称
+  string vllm_model_name = 6;        // 视觉模型名称
+  string mem_model_id = 7;           // 记忆模型ID
+  string system_prompt = 8;          // 角色设定参数
+  string summary_memory = 9;         // 总结记忆
+  string last_connected_at = 10;     // 最后连接时间
+  int32 device_count = 11;           // 设备数量
+}
+
+// AgentPluginMapping 插件映射信息
+message AgentPluginMapping {
+  int64 id = 1;                      // 映射ID
+  string agent_id = 2;               // 智能体ID
+  string plugin_id = 3;              // 插件ID
+  string param_info = 4;             // 插件参数(JSON格式)
+  string provider_code = 5;           // 插件provider_code
+}
+
+// AgentInfoVO 智能体详情
+message AgentInfoVO {
+  string id = 1;                     // 智能体ID
+  int64 user_id = 2;                 // 所属用户ID
+  string agent_code = 3;             // 智能体编码
+  string agent_name = 4;             // 智能体名称
+  string asr_model_id = 5;           // 语音识别模型标识
+  string vad_model_id = 6;           // 语音活动检测标识
+  string llm_model_id = 7;           // 大语言模型标识
+  string vllm_model_id = 8;          // VLLM模型标识
+  string tts_model_id = 9;           // 语音合成模型标识
+  string tts_voice_id = 10;           // 音色标识
+  string mem_model_id = 11;          // 记忆模型标识
+  string intent_model_id = 12;        // 意图模型标识
+  int32 chat_history_conf = 13;      // 聊天记录配置（0不记录 1仅记录文本 2记录文本和语音）
+  string system_prompt = 14;         // 角色设定参数
+  string summary_memory = 15;        // 总结记忆
+  string lang_code = 16;             // 语言编码
+  string language = 17;              // 交互语种
+  int32 sort = 18;                   // 排序
+  int64 creator = 19;                // 创建者
+  string created_at = 20;             // 创建时间
+  int64 updater = 21;                // 更新者
+  string updated_at = 22;            // 更新时间
+  repeated AgentPluginMapping functions = 23; // 插件列表
+}
+
+// AgentCreateRequest 创建智能体请求
+message AgentCreateRequest {
+  string agent_name = 1 [(validate.rules).string.min_len = 1]; // 智能体名称（必填）
+}
+
+// AgentUpdateRequest 更新智能体请求
+message AgentUpdateRequest {
+  string id = 1 [(validate.rules).string.min_len = 1]; // 智能体ID（必填）
+  google.protobuf.StringValue agent_code = 2;          // 智能体编码
+  google.protobuf.StringValue agent_name = 3;          // 智能体名称
+  google.protobuf.StringValue asr_model_id = 4;       // 语音识别模型标识
+  google.protobuf.StringValue vad_model_id = 5;        // 语音活动检测标识
+  google.protobuf.StringValue llm_model_id = 6;       // 大语言模型标识
+  google.protobuf.StringValue vllm_model_id = 7;       // VLLM模型标识
+  google.protobuf.StringValue tts_model_id = 8;        // 语音合成模型标识
+  google.protobuf.StringValue tts_voice_id = 9;        // 音色标识
+  google.protobuf.StringValue mem_model_id = 10;       // 记忆模型标识
+  google.protobuf.StringValue intent_model_id = 11;    // 意图模型标识
+  google.protobuf.Int32Value chat_history_conf = 12;   // 聊天记录配置
+  google.protobuf.StringValue system_prompt = 13;      // 角色设定参数
+  google.protobuf.StringValue summary_memory = 14;    // 总结记忆
+  google.protobuf.StringValue lang_code = 15;          // 语言编码
+  google.protobuf.StringValue language = 16;           // 交互语种
+  google.protobuf.Int32Value sort = 17;                 // 排序
+  repeated AgentPluginMapping functions = 18;          // 插件列表
+}
+
+// AgentMemoryRequest 记忆更新请求
+message AgentMemoryRequest {
+  string summary_memory = 1; // 总结记忆
+}
+
+// AgentTemplateDTO 智能体模板
+message AgentTemplateDTO {
+  string id = 1;                    // 模板ID
+  string agent_code = 2;            // 智能体编码
+  string agent_name = 3;            // 智能体名称
+  string asr_model_id = 4;          // 语音识别模型标识
+  string vad_model_id = 5;          // 语音活动检测标识
+  string llm_model_id = 6;          // 大语言模型标识
+  string vllm_model_id = 7;         // VLLM模型标识
+  string tts_model_id = 8;          // 语音合成模型标识
+  string tts_voice_id = 9;          // 音色标识
+  string mem_model_id = 10;         // 记忆模型标识
+  string intent_model_id = 11;      // 意图模型标识
+  int32 chat_history_conf = 12;     // 聊天记录配置
+  string system_prompt = 13;        // 角色设定参数
+  string summary_memory = 14;       // 总结记忆
+  string lang_code = 15;             // 语言编码
+  string language = 16;             // 交互语种
+  int32 sort = 17;                  // 排序
+}
+
+// AgentChatSessionDTO 智能体会话信息
+message AgentChatSessionDTO {
+  string session_id = 1;            // 会话ID
+  string created_at = 2;             // 会话时间
+  int32 chat_count = 3;             // 聊天条数
+}
+
+// AgentChatHistoryDTO 智能体聊天记录
+message AgentChatHistoryDTO {
+  string created_at = 1;            // 创建时间
+  int32 chat_type = 2;              // 消息类型: 1-用户, 2-智能体
+  string content = 3;                // 聊天内容
+  string audio_id = 4;               // 音频ID
+  string mac_address = 5;            // MAC地址
+}
+
+// AgentChatHistoryUserVO 用户聊天记录VO
+message AgentChatHistoryUserVO {
+  string content = 1;                // 聊天内容
+  string audio_id = 2;               // 音频ID
+}
+
+// ListAgentsRequest 获取智能体列表请求（管理员）
+message ListAgentsRequest {
+  int64 page = 1;                   // 页码，从1开始
+  int64 limit = 2;                  // 每页数量
+}
+
+// GetAgentSessionsRequest 获取智能体会话列表请求
+message GetAgentSessionsRequest {
+  string id = 1 [(validate.rules).string.min_len = 1]; // 智能体ID
+  int64 page = 2;                   // 页码，从1开始
+  int64 limit = 3;                  // 每页数量
+}
+
+// GetAgentChatHistoryRequest 获取智能体聊天记录请求
+message GetAgentChatHistoryRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];        // 智能体ID
+  string session_id = 2 [(validate.rules).string.min_len = 1]; // 会话ID
+}
+
+// GetAudioDownloadIDRequest 获取音频下载ID请求
+message GetAudioDownloadIDRequest {
+  string audio_id = 1 [(validate.rules).string.min_len = 1]; // 音频ID
+}
+
+// PlayAudioRequest 播放音频请求
+message PlayAudioRequest {
+  string uuid = 1 [(validate.rules).string.min_len = 1]; // UUID
+}
+
+// AgentService 智能体管理服务
+service AgentService {
+  // ListUserAgents 获取用户智能体列表
+  rpc ListUserAgents(Empty) returns (Response) {
+    option (google.api.http) = {
+      get: "/agent/list"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取用户智能体列表";
+    };
+  }
+
+  // ListAllAgents 智能体列表（管理员）
+  rpc ListAllAgents(ListAgentsRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/agent/all"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "智能体列表（管理员）";
+    };
+  }
+
+  // GetAgentById 获取智能体详情
+  rpc GetAgentById(GetAgentByIdRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/agent/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取智能体详情";
+    };
+  }
+
+  // CreateAgent 创建智能体
+  rpc CreateAgent(AgentCreateRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/agent"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "创建智能体";
+    };
+  }
+
+  // UpdateAgentMemoryByMacAddress 根据设备更新智能体记忆
+  rpc UpdateAgentMemoryByMacAddress(UpdateAgentMemoryByMacAddressRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/agent/saveMemory/{mac_address}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "根据设备更新智能体记忆";
+    };
+  }
+
+  // UpdateAgent 更新智能体
+  rpc UpdateAgent(AgentUpdateRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/agent/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "更新智能体";
+    };
+  }
+
+  // DeleteAgent 删除智能体（级联删除）
+  rpc DeleteAgent(GetAgentByIdRequest) returns (Response) {
+    option (google.api.http) = {
+      delete: "/agent/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除智能体（级联删除）";
+    };
+  }
+
+  // GetAgentTemplates 获取智能体模板列表
+  rpc GetAgentTemplates(Empty) returns (Response) {
+    option (google.api.http) = {
+      get: "/agent/template"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取智能体模板列表";
+    };
+  }
+
+  // GetAgentSessions 获取智能体会话列表
+  rpc GetAgentSessions(GetAgentSessionsRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/agent/{id}/sessions"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取智能体会话列表";
+    };
+  }
+
+  // GetAgentChatHistory 获取智能体聊天记录
+  rpc GetAgentChatHistory(GetAgentChatHistoryRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/agent/{id}/chat-history/{session_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取智能体聊天记录";
+    };
+  }
+
+  // GetRecentFiftyUserChats 获取智能体最近50条聊天记录
+  rpc GetRecentFiftyUserChats(GetAgentByIdRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/agent/{id}/chat-history/user"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取智能体最近50条聊天记录";
+    };
+  }
+
+  // GetContentByAudioId 获取音频内容
+  rpc GetContentByAudioId(GetAgentByIdRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/agent/{id}/chat-history/audio"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取音频内容";
+    };
+  }
+
+  // GetAudioDownloadID 获取音频下载ID
+  rpc GetAudioDownloadID(GetAudioDownloadIDRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/agent/audio/{audio_id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取音频下载ID";
+    };
+  }
+
+  // PlayAudio 播放音频
+  rpc PlayAudio(PlayAudioRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/agent/play/{uuid}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "播放音频";
+    };
+  }
+}
+
+// GetAgentByIdRequest 获取智能体详情请求
+message GetAgentByIdRequest {
+  string id = 1 [(validate.rules).string.min_len = 1]; // 智能体ID
+}
+
+// UpdateAgentMemoryByMacAddressRequest 根据设备更新智能体记忆请求
+message UpdateAgentMemoryByMacAddressRequest {
+  string mac_address = 1 [(validate.rules).string.min_len = 1]; // MAC地址
+  string summary_memory = 2; // 总结记忆
+}
+

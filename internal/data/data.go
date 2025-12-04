@@ -2,6 +2,7 @@ package data
 
 import (
 	"fmt"
+
 	"github.com/weetime/agent-matrix/internal/conf"
 	"github.com/weetime/agent-matrix/internal/data/ent"
 	"github.com/weetime/agent-matrix/internal/kit"
@@ -21,9 +22,9 @@ var ProviderSet = wire.NewSet(
 	NewData,
 	NewApiKeyRepo,
 	NewConfigRepo,
+	NewAgentRepo,
 	kit.NewRedisClient,
 )
-
 
 // Data .
 type Data struct {

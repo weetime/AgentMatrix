@@ -19,6 +19,7 @@ func NewHTTPServer(c *conf.Bootstrap,
 	apiKey *service.ApiKeyService,
 	config *service.ConfigService,
 	sysParams *service.SysParamsService,
+	agent *service.AgentService,
 	logger log.Logger,
 ) *http.Server {
 
@@ -43,6 +44,7 @@ func NewHTTPServer(c *conf.Bootstrap,
 	v1.RegisterApiKeyServiceHTTPServer(srv, apiKey)
 	v1.RegisterConfigServiceHTTPServer(srv, config)
 	v1.RegisterSysParamsServiceHTTPServer(srv, sysParams)
+	v1.RegisterAgentServiceHTTPServer(srv, agent)
 	srv.HandlePrefix("/q/", openapiv2.NewHandler())
 	srv.HandleFunc("/ws", service.WebSocketHandler)
 	return srv
