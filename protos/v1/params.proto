@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
+
+import "protos/v1/agentmatrix.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/wrappers.proto";
+
+// SysParamsDTO 系统参数
+message SysParamsDTO {
+  int64 id = 1;
+  string param_code = 2;
+  string param_value = 3;
+  string value_type = 4;
+  string remark = 5;
+  string create_date = 6;
+  string update_date = 7;
+}
+
+// SysParamsFilters 参数查询过滤条件
+message SysParamsFilters {
+  google.protobuf.StringValue param_code = 1; // 参数编码或备注（模糊查询）
+}
+
+// PageSysParamsRequest 分页查询参数请求
+message PageSysParamsRequest {
+  google.protobuf.StringValue param_code = 1; // 参数编码
+  int64 page = 2; // 页码，从1开始
+  int64 limit = 3; // 每页数量
+}
+
+// PageSysParamsResponse 分页查询参数响应
+message PageSysParamsResponse {
+  int32 total = 1;
+  repeated SysParamsDTO list = 2;
+}
+
+// GetSysParamsRequest 获取参数详情请求
+message GetSysParamsRequest {
+  int64 id = 1;
+}
+
+// SaveSysParamsRequest 保存参数请求
+// 直接使用 SysParamsDTO 字段，与前端保持兼容
+message SaveSysParamsRequest {
+  int64 id = 1;
+  string param_code = 2;
+  string param_value = 3;
+  string value_type = 4;
+  string remark = 5;
+}
+
+// UpdateSysParamsRequest 修改参数请求
+// 直接使用 SysParamsDTO 字段，与前端保持兼容
+message UpdateSysParamsRequest {
+  int64 id = 1;
+  string param_code = 2;
+  string param_value = 3;
+  string value_type = 4;
+  string remark = 5;
+}
+
+// DeleteSysParamsRequest 删除参数请求
+message DeleteSysParamsRequest {
+  repeated int64 ids = 1;
+}
+
+// SysParamsService 参数管理服务
+service SysParamsService {
+  // PageSysParams 分页查询参数
+  rpc PageSysParams(PageSysParamsRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/admin/params/page"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "分页查询参数";
+    };
+  }
+
+  // GetSysParams 获取参数详情
+  rpc GetSysParams(GetSysParamsRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/admin/params/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取参数详情";
+    };
+  }
+
+  // SaveSysParams 保存参数
+  rpc SaveSysParams(SaveSysParamsRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/admin/params"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "保存参数";
+    };
+  }
+
+  // UpdateSysParams 修改参数
+  rpc UpdateSysParams(UpdateSysParamsRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/admin/params"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "修改参数";
+    };
+  }
+
+  // DeleteSysParams 删除参数
+  rpc DeleteSysParams(DeleteSysParamsRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/admin/params/delete"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除参数";
+    };
+  }
+}
+

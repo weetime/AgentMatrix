@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/weetime/agent-matrix/internal/kit"
 	"github.com/weetime/agent-matrix/internal/kit/cerrors"
 
@@ -15,17 +16,34 @@ import (
 
 // SysParam 系统参数
 type SysParam struct {
-	ID        int64
-	ParamCode string
+	ID         int64
+	ParamCode  string
 	ParamValue string
-	ValueType string
-	ParamType int8
-	Remark    string
+	ValueType  string
+	ParamType  int8
+	Remark     string
+	Creator    int64
+	Updater    int64
+}
+
+// ListSysParamsParams 查询参数过滤条件
+type ListSysParamsParams struct {
+	ParamCode *wrappers.StringValue // 参数编码或备注（模糊查询）
 }
 
 // ConfigRepo 配置数据访问接口
 type ConfigRepo interface {
 	ListAllParams(ctx context.Context) ([]*SysParam, error)
+	// 分页查询参数（使用项目规范）
+	ListSysParams(ctx context.Context, params *ListSysParamsParams, page *kit.PageRequest) ([]*SysParam, error)
+	TotalSysParams(ctx context.Context, params *ListSysParamsParams) (int, error)
+	// 兼容旧接口
+	PageSysParams(ctx context.Context, page, limit int32, paramCode string) ([]*SysParam, int, error)
+	GetSysParamsByID(ctx context.Context, id int64) (*SysParam, error)
+	CreateSysParams(ctx context.Context, param *SysParam) (*SysParam, error)
+	UpdateSysParams(ctx context.Context, param *SysParam) error
+	DeleteSysParams(ctx context.Context, ids []int64) error
+	GetSysParamsByCode(ctx context.Context, paramCode string) (*SysParam, error)
 }
 
 // ConfigUsecase 配置业务逻辑
@@ -238,3 +256,271 @@ func (uc *ConfigUsecase) cleanJavaClassInfo(data interface{}) interface{} {
 	}
 }
 
+// ListSysParams 列表查询参数（使用项目规范）
+func (uc *ConfigUsecase) ListSysParams(ctx context.Context, params *ListSysParamsParams, page *kit.PageRequest) ([]*SysParam, error) {
+	if err := kit.Validate(params); err != nil {
+		return nil, uc.handleError.ErrInvalidInput(ctx, err)
+	}
+	return uc.repo.ListSysParams(ctx, params, page)
+}
+
+// TotalSysParams 获取参数总数
+func (uc *ConfigUsecase) TotalSysParams(ctx context.Context, params *ListSysParamsParams) (int, error) {
+	if err := kit.Validate(params); err != nil {
+		return 0, uc.handleError.ErrInvalidInput(ctx, err)
+	}
+	return uc.repo.TotalSysParams(ctx, params)
+}
+
+// PageSysParams 分页查询参数（兼容旧接口）
+func (uc *ConfigUsecase) PageSysParams(ctx context.Context, page, limit int32, paramCode string) ([]*SysParam, int, error) {
+	return uc.repo.PageSysParams(ctx, page, limit, paramCode)
+}
+
+// GetSysParamsByID 根据ID获取参数
+func (uc *ConfigUsecase) GetSysParamsByID(ctx context.Context, id int64) (*SysParam, error) {
+	return uc.repo.GetSysParamsByID(ctx, id)
+}
+
+// CreateSysParams 创建参数
+func (uc *ConfigUsecase) CreateSysParams(ctx context.Context, param *SysParam) (*SysParam, error) {
+	// 检查参数编码是否已存在
+	existing, err := uc.repo.GetSysParamsByCode(ctx, param.ParamCode)
+	if err == nil && existing != nil {
+		return nil, fmt.Errorf("参数编码 %s 已存在", param.ParamCode)
+	}
+
+	// 设置默认值
+	if param.ValueType == "" {
+		param.ValueType = "string"
+	}
+	if param.ParamType == 0 {
+		param.ParamType = 1 // 默认为非系统参数
+	}
+
+	return uc.repo.CreateSysParams(ctx, param)
+}
+
+// UpdateSysParams 更新参数
+func (uc *ConfigUsecase) UpdateSysParams(ctx context.Context, param *SysParam) error {
+	// 检查参数是否存在
+	existing, err := uc.repo.GetSysParamsByID(ctx, param.ID)
+	if err != nil {
+		return fmt.Errorf("参数不存在: %w", err)
+	}
+
+	// 如果修改了参数编码，检查新编码是否已存在
+	if param.ParamCode != existing.ParamCode {
+		codeExists, err := uc.repo.GetSysParamsByCode(ctx, param.ParamCode)
+		if err == nil && codeExists != nil && codeExists.ID != param.ID {
+			return fmt.Errorf("参数编码 %s 已存在", param.ParamCode)
+		}
+	}
+
+	// 验证参数值
+	if err := uc.validateParamValue(ctx, param.ParamCode, param.ParamValue); err != nil {
+		return err
+	}
+
+	// 更新参数
+	if err := uc.repo.UpdateSysParams(ctx, param); err != nil {
+		return err
+	}
+
+	// 清除配置缓存
+	if uc.redisClient != nil {
+		uc.redisClient.Delete(ctx, kit.RedisKeyServerConfig)
+	}
+
+	return nil
+}
+
+// DeleteSysParams 批量删除参数
+func (uc *ConfigUsecase) DeleteSysParams(ctx context.Context, ids []int64) error {
+	if len(ids) == 0 {
+		return fmt.Errorf("参数ID列表不能为空")
+	}
+
+	if err := uc.repo.DeleteSysParams(ctx, ids); err != nil {
+		return err
+	}
+
+	// 清除配置缓存
+	if uc.redisClient != nil {
+		uc.redisClient.Delete(ctx, kit.RedisKeyServerConfig)
+	}
+
+	return nil
+}
+
+// validateParamValue 验证参数值
+func (uc *ConfigUsecase) validateParamValue(ctx context.Context, paramCode, paramValue string) error {
+	// 参数编码常量
+	const (
+		SERVER_WEBSOCKET     = "server.websocket"
+		SERVER_OTA           = "server.ota"
+		SERVER_MCP_ENDPOINT  = "server.mcp_endpoint"
+		SERVER_VOICE_PRINT   = "server.voice_print"
+		SERVER_MQTT_SIGN_KEY = "server.mqtt_signature_key"
+	)
+
+	switch paramCode {
+	case SERVER_WEBSOCKET:
+		return uc.validateWebSocketUrl(paramValue)
+	case SERVER_OTA:
+		return uc.validateOtaUrl(paramValue)
+	case SERVER_MCP_ENDPOINT:
+		return uc.validateMcpUrl(paramValue)
+	case SERVER_VOICE_PRINT:
+		return uc.validateVoicePrintUrl(paramValue)
+	case SERVER_MQTT_SIGN_KEY:
+		return uc.validateMqttKey(paramValue)
+	default:
+		return nil
+	}
+}
+
+// validateWebSocketUrl 验证WebSocket地址
+func (uc *ConfigUsecase) validateWebSocketUrl(url string) error {
+	if url == "" || url == "null" {
+		return nil
+	}
+
+	// 检查是否包含localhost或127.0.0.1
+	if strings.Contains(url, "localhost") || strings.Contains(url, "127.0.0.1") {
+		return fmt.Errorf("WebSocket地址不能包含localhost或127.0.0.1")
+	}
+
+	// 验证格式：ws://或wss://开头
+	if !strings.HasPrefix(url, "ws://") && !strings.HasPrefix(url, "wss://") {
+		return fmt.Errorf("WebSocket地址格式错误，必须以ws://或wss://开头")
+	}
+
+	// TODO: 连接测试（需要实现WebSocket客户端测试）
+	// 这里暂时只做格式验证
+
+	return nil
+}
+
+// validateOtaUrl 验证OTA地址
+func (uc *ConfigUsecase) validateOtaUrl(url string) error {
+	if url == "" || url == "null" {
+		return nil
+	}
+
+	// 检查是否包含localhost或127.0.0.1
+	if strings.Contains(url, "localhost") || strings.Contains(url, "127.0.0.1") {
+		return fmt.Errorf("OTA地址不能包含localhost或127.0.0.1")
+	}
+
+	// 必须以http开头
+	if !strings.HasPrefix(strings.ToLower(url), "http") {
+		return fmt.Errorf("OTA地址必须以http开头")
+	}
+
+	// 必须以/ota/结尾
+	if !strings.HasSuffix(url, "/ota/") {
+		return fmt.Errorf("OTA地址必须以/ota/结尾")
+	}
+
+	// TODO: 连接测试（需要实现HTTP请求测试）
+
+	return nil
+}
+
+// validateMcpUrl 验证MCP地址
+func (uc *ConfigUsecase) validateMcpUrl(url string) error {
+	if url == "" || url == "null" {
+		return nil
+	}
+
+	// 检查是否包含localhost或127.0.0.1
+	if strings.Contains(url, "localhost") || strings.Contains(url, "127.0.0.1") {
+		return fmt.Errorf("MCP地址不能包含localhost或127.0.0.1")
+	}
+
+	// 必须包含"key"
+	if !strings.Contains(url, "key") {
+		return fmt.Errorf("MCP地址必须包含key")
+	}
+
+	// TODO: 连接测试（需要实现HTTP请求测试）
+
+	return nil
+}
+
+// validateVoicePrintUrl 验证声纹地址
+func (uc *ConfigUsecase) validateVoicePrintUrl(url string) error {
+	if url == "" || url == "null" {
+		return nil
+	}
+
+	// 检查是否包含localhost或127.0.0.1
+	if strings.Contains(url, "localhost") || strings.Contains(url, "127.0.0.1") {
+		return fmt.Errorf("声纹地址不能包含localhost或127.0.0.1")
+	}
+
+	// 必须以http开头
+	if !strings.HasPrefix(strings.ToLower(url), "http") {
+		return fmt.Errorf("声纹地址必须以http开头")
+	}
+
+	// 必须包含"key"
+	if !strings.Contains(url, "key") {
+		return fmt.Errorf("声纹地址必须包含key")
+	}
+
+	// TODO: 健康检查（需要实现HTTP请求测试）
+
+	return nil
+}
+
+// validateMqttKey 验证MQTT密钥
+func (uc *ConfigUsecase) validateMqttKey(key string) error {
+	if key == "" || key == "null" {
+		return nil
+	}
+
+	// 长度至少8位
+	if len(key) < 8 {
+		return fmt.Errorf("MQTT密钥长度至少8位")
+	}
+
+	// 包含大小写字母
+	hasUpper := false
+	hasLower := false
+	for _, r := range key {
+		if r >= 'A' && r <= 'Z' {
+			hasUpper = true
+		}
+		if r >= 'a' && r <= 'z' {
+			hasLower = true
+		}
+	}
+	if !hasUpper || !hasLower {
+		return fmt.Errorf("MQTT密钥必须包含大小写字母")
+	}
+
+	// 弱密码检查
+	weakPasswords := []string{"123456", "password", "admin", "qwerty", "abc123"}
+	keyLower := strings.ToLower(key)
+	for _, weak := range weakPasswords {
+		if strings.Contains(keyLower, weak) {
+			return fmt.Errorf("MQTT密钥不能包含弱密码")
+		}
+	}
+
+	return nil
+}
+
+// ValidateParamValue 验证参数值（公开方法供service调用）
+func (uc *ConfigUsecase) ValidateParamValue(ctx context.Context, paramCode, paramValue string) error {
+	return uc.validateParamValue(ctx, paramCode, paramValue)
+}
+
+// ClearConfigCache 清除配置缓存
+func (uc *ConfigUsecase) ClearConfigCache(ctx context.Context) {
+	if uc.redisClient != nil {
+		uc.redisClient.Delete(ctx, kit.RedisKeyServerConfig)
+	}
+}

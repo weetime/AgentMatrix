@@ -10,6 +10,7 @@ import (
 var ProviderSet = wire.NewSet(
 	NewApiKeyService,
 	NewConfigService,
+	NewSysParamsService,
 )
 
 var pbErrorInvalidUUID = pb.ErrorInvalidArgument("uuid is invalid")

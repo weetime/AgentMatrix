@@ -18,6 +18,7 @@ import (
 func NewGRPCServer(c *conf.Bootstrap,
 	apiKey *service.ApiKeyService,
 	config *service.ConfigService,
+	sysParams *service.SysParamsService,
 	logger log.Logger,
 ) *grpc.Server {
 
@@ -41,5 +42,6 @@ func NewGRPCServer(c *conf.Bootstrap,
 	srv := grpc.NewServer(opts...)
 	v1.RegisterApiKeyServiceServer(srv, apiKey)
 	v1.RegisterConfigServiceServer(srv, config)
+	v1.RegisterSysParamsServiceServer(srv, sysParams)
 	return srv
 }

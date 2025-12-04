@@ -38,7 +38,7 @@
 | Spring Boot 3.4.3 | **Kratos v2** | ✅ 已采用 | Web 框架 |
 | MyBatis Plus 3.5.5 | **Ent ORM** | ✅ 已采用 | ORM，支持代码生成 |
 | Apache Shiro 2.0.2 | **go-jwt + Casbin** | ⏳ 待实现 | JWT 认证 + RBAC 权限 |
-| Redis (Spring Data) | **go-redis/v9** | ⏳ 待实现 | Redis 客户端 |
+| Redis (Spring Data) | **go-redis/v9** | ✅ 已实现 | Redis 客户端，已集成到配置缓存 |
 | SM2 国密加密 | **tjfoc/gmsm** | ⏳ 待实现 | 国密 SM2 实现 |
 | BCrypt | **golang.org/x/crypto/bcrypt** | ⏳ 待实现 | 密码加密 |
 | 图形验证码 (Easy Captcha) | **base64Captcha** | ⏳ 待实现 | 验证码生成 |
@@ -58,6 +58,11 @@
 
 **目标**: 实现参数管理的完整功能，包括参数CRUD和配置下发给xiaozhi-server
 
+**当前进度**: 
+- ✅ 参数管理 API（0.2）已完成（5个 API）
+- ✅ Redis 集成已完成
+- ⏳ 配置下发 API（0.1）待实现（1个 API）
+
 #### 0.1 配置下发API（给xiaozhi-server使用）
 
 | 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 |
@@ -72,13 +77,13 @@
 
 #### 0.2 参数管理API（管理员使用）
 
-| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 |
-|------|------|------|------|------|----------|
-| 2 | GET | `/admin/params/page` | 分页查询参数 | 超级管理员 | 1天 |
-| 3 | GET | `/admin/params/{id}` | 获取参数详情 | 超级管理员 | 0.5天 |
-| 4 | POST | `/admin/params` | 保存参数（含验证） | 超级管理员 | 1.5天 |
-| 5 | PUT | `/admin/params` | 修改参数（含多种验证） | 超级管理员 | 2天 |
-| 6 | POST | `/admin/params/delete` | 删除参数 | 超级管理员 | 0.5天 |
+| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 | 状态 |
+|------|------|------|------|------|----------|------|
+| 2 | GET | `/admin/params/page` | 分页查询参数 | 超级管理员 | 1天 | ✅ 已完成 |
+| 3 | GET | `/admin/params/{id}` | 获取参数详情 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 4 | POST | `/admin/params` | 保存参数（含验证） | 超级管理员 | 1.5天 | ✅ 已完成 |
+| 5 | PUT | `/admin/params` | 修改参数（含多种验证） | 超级管理员 | 2天 | ✅ 已完成 |
+| 6 | POST | `/admin/params/delete` | 删除参数 | 超级管理员 | 0.5天 | ✅ 已完成 |
 
 **参数验证逻辑**:
 - WebSocket地址验证（格式、连接测试、禁止localhost）
@@ -92,12 +97,18 @@
 **Phase 0 总计**: 约 7.5 天（1.5周）
 
 **关键依赖**:
-- ✅ 需要创建 Ent Schema: `sys_params`
-- ✅ 需要实现 Redis 工具类（`go-redis/v9`）
-- ✅ 需要实现配置构建逻辑（`buildConfig`）
-- ✅ 需要实现参数验证工具类
-- ✅ 需要实现 WebSocket 连接测试
-- ✅ 需要实现 HTTP 客户端（用于接口测试）
+- ✅ 已创建 Ent Schema: `sys_params`
+- ✅ 已实现 Redis 工具类（`go-redis/v9`）- 位于 `internal/kit/redis.go`，已集成到配置缓存
+- ✅ 已实现配置构建逻辑（`buildConfig`）- 位于 `internal/biz/config.go`
+- ✅ 已实现参数验证工具类
+- ✅ 已实现 WebSocket 连接测试
+- ✅ 已实现 HTTP 客户端（用于接口测试）
+
+**实现说明**:
+- Redis 客户端封装在 `internal/kit/redis.go`，提供 `GetObject`、`SetObject`、`Delete` 等方法
+- 配置缓存使用 `RedisKeyServerConfig = "server:config"` 作为 Key
+- 参数管理服务实现在 `internal/service/params.go`，支持完整的 CRUD 操作
+- 所有 API 端点已在 `protos/v1/params.proto` 中定义并通过 gRPC Gateway 暴露为 HTTP 接口
 
 ---
 
@@ -731,14 +742,14 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
 ### 第零阶段：参数管理下发（1.5周）🔥🔥🔥
 
 **Week 1**:
-- [ ] Day 1: 创建 `sys_params.go` Ent Schema
+- [x] Day 1: 创建 `sys_params.go` Ent Schema
   - 定义表结构（id, param_code, param_value, value_type, param_type, remark等）
   - 生成 Ent 代码
-- [ ] Day 2: 实现 Redis 工具类
+- [x] Day 2: 实现 Redis 工具类
   - 配置 Redis 连接
   - 实现基本的 get/set/delete 操作
   - 实现参数缓存逻辑
-- [ ] Day 3-4: 实现 `buildConfig()` 核心逻辑
+- [x] Day 3-4: 实现 `buildConfig()` 核心逻辑
   - 从数据库查询所有系统参数
   - 按照 `param_code` 点号分隔构建嵌套 Map
   - 根据 `value_type` 转换数据类型（string, number, boolean, array, json）
@@ -749,13 +760,13 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
   - 编写单元测试
 
 **Week 2**:
-- [ ] Day 1: 实现参数管理基础 API
+- [x] Day 1: 实现参数管理基础 API
   - `GET /admin/params/page` - 分页查询
   - `GET /admin/params/{id}` - 获取详情
-- [ ] Day 2: 实现参数保存和删除 API
+- [x] Day 2: 实现参数保存和删除 API
   - `POST /admin/params` - 保存参数（含基础验证）
   - `POST /admin/params/delete` - 删除参数
-- [ ] Day 3-4: 实现参数修改 API（含复杂验证）
+- [x] Day 3-4: 实现参数修改 API（含复杂验证）
   - `PUT /admin/params` - 修改参数
   - 实现 WebSocket 地址验证
   - 实现 OTA 地址验证
@@ -995,12 +1006,12 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
 
 ### 10.3 下一步行动
 
-1. **立即开始 Phase 0**:
-   - 创建 `sys_params.go` Ent Schema
-   - 实现 Redis 工具类
-   - 实现 `buildConfig()` 核心逻辑
-   - 实现参数管理 CRUD API
-   - 实现配置下发 API (`POST /config/server-base`)
+1. **Phase 0 进度**:
+   - ✅ 已创建 `sys_params.go` Ent Schema
+   - ✅ 已实现 Redis 工具类（`internal/kit/redis.go`）
+   - ✅ 已实现 `buildConfig()` 核心逻辑（`internal/biz/config.go`）
+   - ✅ 已实现参数管理 CRUD API（`internal/service/params.go`）
+   - ⏳ 待实现配置下发 API (`POST /config/server-base`)
    - 确保与 xiaozhi-server 兼容
 
 2. **并行工作**:

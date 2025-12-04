@@ -67,4 +67,3 @@ func (SysParams) Fields() []ent.Field {
 func (SysParams) Edges() []ent.Edge {
 	return nil
 }
-

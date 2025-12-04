@@ -21,6 +21,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/redis/go-redis/v9 v9.17.2
 	github.com/samber/lo v1.52.0
+	github.com/sony/sonyflake v1.3.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.6
 	go.opentelemetry.io/otel v1.38.0
