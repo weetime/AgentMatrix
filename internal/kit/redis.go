@@ -135,3 +135,32 @@ const (
 	RedisKeyServerConfig = "server:config" // 服务器配置缓存 Key
 	RedisKeySysParams    = "sys:params"    // 系统参数缓存 Key
 )
+
+// GetDictDataByTypeKey 获取字典数据的缓存key
+func GetDictDataByTypeKey(dictType string) string {
+	return fmt.Sprintf("sys:dict:data:%s", dictType)
+}
+
+// GetRedisObject 获取Redis对象（辅助函数，用于直接使用redis.Client的场景）
+func GetRedisObject(ctx context.Context, client *redis.Client, key string, dest interface{}) error {
+	val, err := client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if val == "" {
+		return nil
+	}
+	return json.Unmarshal([]byte(val), dest)
+}
+
+// SetRedisObject 设置Redis对象（辅助函数，用于直接使用redis.Client的场景）
+func SetRedisObject(ctx context.Context, client *redis.Client, key string, value interface{}, expiration time.Duration) error {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("failed to marshal value: %w", err)
+	}
+	return client.Set(ctx, key, string(data), expiration).Err()
+}

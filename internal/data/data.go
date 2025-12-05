@@ -25,6 +25,9 @@ var ProviderSet = wire.NewSet(
 	NewAgentRepo,
 	NewUserRepo,
 	NewUserTokenRepo,
+	NewDictTypeRepo,
+	NewDictDataRepo,
+	NewDeviceRepo,
 	kit.NewRedisClient,
 )
 

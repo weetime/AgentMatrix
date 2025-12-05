@@ -111,7 +111,7 @@ func (s *AgentService) ListAllAgents(ctx context.Context, req *pb.ListAgentsRequ
 	for _, agent := range agents {
 		dtoList = append(dtoList, map[string]interface{}{
 			"id":              agent.ID,
-			"userId":          agent.UserID,
+			"userId":          fmt.Sprintf("%d", agent.UserID),
 			"agentCode":       agent.AgentCode,
 			"agentName":       agent.AgentName,
 			"asrModelId":      agent.ASRModelID,
@@ -128,9 +128,9 @@ func (s *AgentService) ListAllAgents(ctx context.Context, req *pb.ListAgentsRequ
 			"langCode":        agent.LangCode,
 			"language":        agent.Language,
 			"sort":            agent.Sort,
-			"creator":         agent.Creator,
+			"creator":         fmt.Sprintf("%d", agent.Creator),
 			"createdAt":       agent.CreatedAt.Format(time.RFC3339),
-			"updater":         agent.Updater,
+			"updater":         fmt.Sprintf("%d", agent.Updater),
 			"updatedAt":       agent.UpdatedAt.Format(time.RFC3339),
 		})
 	}
@@ -169,36 +169,36 @@ func (s *AgentService) GetAgentById(ctx context.Context, req *pb.GetAgentByIdReq
 	functions := make([]interface{}, 0, len(pluginMappings))
 	for _, pm := range pluginMappings {
 		functions = append(functions, map[string]interface{}{
-			"id":           pm.ID,
-			"agentId":      pm.AgentID,
-			"pluginId":     pm.PluginID,
+			"id":           fmt.Sprintf("%d", pm.ID),
+			"agentId":      fmt.Sprintf("%d", pm.AgentID),
+			"pluginId":     fmt.Sprintf("%d", pm.PluginID),
 			"paramInfo":    pm.ParamInfo,
 			"providerCode": pm.ProviderCode,
 		})
 	}
 
 	data := map[string]interface{}{
-		"id":              agent.ID,
-		"userId":          agent.UserID,
+		"id":              fmt.Sprintf("%d", agent.ID),
+		"userId":          fmt.Sprintf("%d", agent.UserID),
 		"agentCode":       agent.AgentCode,
 		"agentName":       agent.AgentName,
-		"asrModelId":      agent.ASRModelID,
-		"vadModelId":      agent.VADModelID,
-		"llmModelId":      agent.LLMModelID,
-		"vllmModelId":     agent.VLLMModelID,
-		"ttsModelId":      agent.TTSModelID,
-		"ttsVoiceId":      agent.TTSVoiceID,
-		"memModelId":      agent.MemModelID,
-		"intentModelId":   agent.IntentModelID,
+		"asrModelId":      fmt.Sprintf("%d", agent.ASRModelID),
+		"vadModelId":      fmt.Sprintf("%d", agent.VADModelID),
+		"llmModelId":      fmt.Sprintf("%d", agent.LLMModelID),
+		"vllmModelId":     fmt.Sprintf("%d", agent.VLLMModelID),
+		"ttsModelId":      fmt.Sprintf("%d", agent.TTSModelID),
+		"ttsVoiceId":      fmt.Sprintf("%d", agent.TTSVoiceID),
+		"memModelId":      fmt.Sprintf("%d", agent.MemModelID),
+		"intentModelId":   fmt.Sprintf("%d", agent.IntentModelID),
 		"chatHistoryConf": agent.ChatHistoryConf,
 		"systemPrompt":    agent.SystemPrompt,
 		"summaryMemory":   agent.SummaryMemory,
 		"langCode":        agent.LangCode,
 		"language":        agent.Language,
 		"sort":            agent.Sort,
-		"creator":         agent.Creator,
+		"creator":         fmt.Sprintf("%d", agent.Creator),
 		"createdAt":       agent.CreatedAt.Format(time.RFC3339),
-		"updater":         agent.Updater,
+		"updater":         fmt.Sprintf("%d", agent.Updater),
 		"updatedAt":       agent.UpdatedAt.Format(time.RFC3339),
 		"functions":       functions,
 	}
@@ -239,7 +239,7 @@ func (s *AgentService) CreateAgent(ctx context.Context, req *pb.AgentCreateReque
 	}
 
 	data := map[string]interface{}{
-		"id": agent.ID,
+		"id": fmt.Sprintf("%d", agent.ID),
 	}
 
 	dataStruct, err := structpb.NewStruct(data)
@@ -392,17 +392,17 @@ func (s *AgentService) GetAgentTemplates(ctx context.Context, req *pb.Empty) (*p
 	templateList := make([]interface{}, 0, len(templates))
 	for _, t := range templates {
 		templateList = append(templateList, map[string]interface{}{
-			"id":              t.ID,
+			"id":              fmt.Sprintf("%d", t.ID),
 			"agentCode":       t.AgentCode,
 			"agentName":       t.AgentName,
-			"asrModelId":      t.ASRModelID,
-			"vadModelId":      t.VADModelID,
-			"llmModelId":      t.LLMModelID,
-			"vllmModelId":     t.VLLMModelID,
-			"ttsModelId":      t.TTSModelID,
-			"ttsVoiceId":      t.TTSVoiceID,
-			"memModelId":      t.MemModelID,
-			"intentModelId":   t.IntentModelID,
+			"asrModelId":      fmt.Sprintf("%d", t.ASRModelID),
+			"vadModelId":      fmt.Sprintf("%d", t.VADModelID),
+			"llmModelId":      fmt.Sprintf("%d", t.LLMModelID),
+			"vllmModelId":     fmt.Sprintf("%d", t.VLLMModelID),
+			"ttsModelId":      fmt.Sprintf("%d", t.TTSModelID),
+			"ttsVoiceId":      fmt.Sprintf("%d", t.TTSVoiceID),
+			"memModelId":      fmt.Sprintf("%d", t.MemModelID),
+			"intentModelId":   fmt.Sprintf("%d", t.IntentModelID),
 			"chatHistoryConf": t.ChatHistoryConf,
 			"systemPrompt":    t.SystemPrompt,
 			"summaryMemory":   t.SummaryMemory,

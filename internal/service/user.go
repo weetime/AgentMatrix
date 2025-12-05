@@ -198,13 +198,11 @@ func (s *UserService) GetUserInfo(ctx context.Context, req *pb.GetUserInfoReques
 	}
 
 	data := map[string]interface{}{
-		"user": map[string]interface{}{
-			"id":          userDetail.ID,
-			"username":    userDetail.Username,
-			"super_admin": userDetail.SuperAdmin,
-			"status":      userDetail.Status,
-			"token":       userDetail.Token,
-		},
+		"id":         fmt.Sprintf("%d", userDetail.ID),
+		"username":   userDetail.Username,
+		"superAdmin": userDetail.SuperAdmin,
+		"status":     userDetail.Status,
+		"token":      userDetail.Token,
 	}
 
 	dataStruct, err := structpb.NewStruct(data)

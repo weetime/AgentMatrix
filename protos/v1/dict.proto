@@ -1,0 +1,271 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
+
+import "protos/v1/agentmatrix.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/wrappers.proto";
+import "validate/validate.proto";
+
+// SysDictTypeDTO 字典类型DTO
+message SysDictTypeDTO {
+  int64 id = 1;
+  string dict_type = 2;
+  string dict_name = 3;
+  string remark = 4;
+  int32 sort = 5;
+  string create_date = 6;
+  string update_date = 7;
+}
+
+// SysDictTypeVO 字典类型VO
+message SysDictTypeVO {
+  int64 id = 1;
+  string dict_type = 2;
+  string dict_name = 3;
+  string remark = 4;
+  int32 sort = 5;
+  int64 creator = 6;
+  string creator_name = 7;
+  string create_date = 8;
+  int64 updater = 9;
+  string updater_name = 10;
+  string update_date = 11;
+}
+
+// SysDictDataDTO 字典数据DTO
+message SysDictDataDTO {
+  int64 id = 1;
+  int64 dict_type_id = 2;
+  string dict_label = 3;
+  string dict_value = 4;
+  string remark = 5;
+  int32 sort = 6;
+  string create_date = 7;
+  string update_date = 8;
+}
+
+// SysDictDataVO 字典数据VO
+message SysDictDataVO {
+  int64 id = 1;
+  int64 dict_type_id = 2;
+  string dict_label = 3;
+  string dict_value = 4;
+  string remark = 5;
+  int32 sort = 6;
+  int64 creator = 7;
+  string creator_name = 8;
+  string create_date = 9;
+  int64 updater = 10;
+  string updater_name = 11;
+  string update_date = 12;
+}
+
+// SysDictDataItem 字典数据项（用于根据类型获取列表）
+message SysDictDataItem {
+  string name = 1;  // dictLabel
+  string key = 2;   // dictValue
+}
+
+// PageSysDictTypeRequest 分页查询字典类型请求
+message PageSysDictTypeRequest {
+  google.protobuf.StringValue dict_type = 1;  // 字典类型编码（模糊查询）
+  google.protobuf.StringValue dict_name = 2;  // 字典名称（模糊查询）
+  int64 page = 3;  // 页码，从1开始
+  int64 limit = 4; // 每页数量
+}
+
+// GetSysDictTypeRequest 获取字典类型详情请求
+message GetSysDictTypeRequest {
+  int64 id = 1 [(validate.rules).int64.gt = 0];
+}
+
+// SaveSysDictTypeRequest 保存字典类型请求
+message SaveSysDictTypeRequest {
+  string dict_type = 1 [(validate.rules).string.min_len = 1];
+  string dict_name = 2 [(validate.rules).string.min_len = 1];
+  string remark = 3;
+  int32 sort = 4;
+}
+
+// UpdateSysDictTypeRequest 修改字典类型请求
+message UpdateSysDictTypeRequest {
+  int64 id = 1 [(validate.rules).int64.gt = 0];
+  string dict_type = 2 [(validate.rules).string.min_len = 1];
+  string dict_name = 3 [(validate.rules).string.min_len = 1];
+  string remark = 4;
+  int32 sort = 5;
+}
+
+// DeleteSysDictTypeRequest 删除字典类型请求
+message DeleteSysDictTypeRequest {
+  repeated int64 ids = 1 [(validate.rules).repeated.min_items = 1];
+}
+
+// PageSysDictDataRequest 分页查询字典数据请求
+message PageSysDictDataRequest {
+  int64 dict_type_id = 1 [(validate.rules).int64.gt = 0];  // 字典类型ID（必填）
+  google.protobuf.StringValue dict_label = 2;  // 字典标签（模糊查询）
+  google.protobuf.StringValue dict_value = 3; // 字典值（模糊查询）
+  int64 page = 4;  // 页码，从1开始
+  int64 limit = 5; // 每页数量
+}
+
+// GetSysDictDataRequest 获取字典数据详情请求
+message GetSysDictDataRequest {
+  int64 id = 1 [(validate.rules).int64.gt = 0];
+}
+
+// SaveSysDictDataRequest 保存字典数据请求
+message SaveSysDictDataRequest {
+  int64 dict_type_id = 1 [(validate.rules).int64.gt = 0];
+  string dict_label = 2 [(validate.rules).string.min_len = 1];
+  string dict_value = 3;
+  string remark = 4;
+  int32 sort = 5;
+}
+
+// UpdateSysDictDataRequest 修改字典数据请求
+message UpdateSysDictDataRequest {
+  int64 id = 1 [(validate.rules).int64.gt = 0];
+  int64 dict_type_id = 2 [(validate.rules).int64.gt = 0];
+  string dict_label = 3 [(validate.rules).string.min_len = 1];
+  string dict_value = 4;
+  string remark = 5;
+  int32 sort = 6;
+}
+
+// DeleteSysDictDataRequest 删除字典数据请求
+message DeleteSysDictDataRequest {
+  repeated int64 ids = 1 [(validate.rules).repeated.min_items = 1];
+}
+
+// GetDictDataByTypeRequest 根据字典类型获取数据列表请求
+message GetDictDataByTypeRequest {
+  string dict_type = 1 [(validate.rules).string.min_len = 1];
+}
+
+// SysDictTypeService 字典类型管理服务
+service SysDictTypeService {
+  // PageSysDictType 分页查询字典类型
+  rpc PageSysDictType(PageSysDictTypeRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/admin/dict/type/page"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "分页查询字典类型";
+    };
+  }
+
+  // GetSysDictType 获取字典类型详情
+  rpc GetSysDictType(GetSysDictTypeRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/admin/dict/type/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取字典类型详情";
+    };
+  }
+
+  // SaveSysDictType 保存字典类型
+  rpc SaveSysDictType(SaveSysDictTypeRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/admin/dict/type/save"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "保存字典类型";
+    };
+  }
+
+  // UpdateSysDictType 修改字典类型
+  rpc UpdateSysDictType(UpdateSysDictTypeRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/admin/dict/type/update"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "修改字典类型";
+    };
+  }
+
+  // DeleteSysDictType 删除字典类型
+  rpc DeleteSysDictType(DeleteSysDictTypeRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/admin/dict/type/delete"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除字典类型";
+    };
+  }
+}
+
+// SysDictDataService 字典数据管理服务
+service SysDictDataService {
+  // PageSysDictData 分页查询字典数据
+  rpc PageSysDictData(PageSysDictDataRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/admin/dict/data/page"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "分页查询字典数据";
+    };
+  }
+
+  // GetSysDictData 获取字典数据详情
+  rpc GetSysDictData(GetSysDictDataRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/admin/dict/data/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取字典数据详情";
+    };
+  }
+
+  // SaveSysDictData 新增字典数据
+  rpc SaveSysDictData(SaveSysDictDataRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/admin/dict/data/save"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "新增字典数据";
+    };
+  }
+
+  // UpdateSysDictData 修改字典数据
+  rpc UpdateSysDictData(UpdateSysDictDataRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/admin/dict/data/update"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "修改字典数据";
+    };
+  }
+
+  // DeleteSysDictData 删除字典数据
+  rpc DeleteSysDictData(DeleteSysDictDataRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/admin/dict/data/delete"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除字典数据";
+    };
+  }
+
+  // GetDictDataByType 根据字典类型获取数据列表
+  rpc GetDictDataByType(GetDictDataByTypeRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/admin/dict/data/type/{dict_type}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取字典数据列表";
+    };
+  }
+}

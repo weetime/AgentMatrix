@@ -152,6 +152,31 @@ func (r *userRepo) GetAllowUserRegister(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
+// GetUsersByIDs 批量获取用户
+func (r *userRepo) GetUsersByIDs(ctx context.Context, userIds []int64) (map[int64]*biz.User, error) {
+	if len(userIds) == 0 {
+		return make(map[int64]*biz.User), nil
+	}
+
+	users, err := r.data.db.SysUser.Query().
+		Where(sysuser.IDIn(userIds...)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[int64]*biz.User, len(users))
+	for _, user := range users {
+		var bizUser biz.User
+		if err := copier.Copy(&bizUser, user); err != nil {
+			return nil, err
+		}
+		result[user.ID] = &bizUser
+	}
+
+	return result, nil
+}
+
 // GetByUserId 根据用户ID获取Token
 func (r *userTokenRepo) GetByUserId(ctx context.Context, userId int64) (*biz.UserToken, error) {
 	token, err := r.data.db.SysUserToken.Query().

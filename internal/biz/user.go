@@ -61,6 +61,7 @@ type UserRepo interface {
 	ChangePasswordDirectly(ctx context.Context, userId int64, newPassword string) error
 	GetUserCount(ctx context.Context) (int64, error)
 	GetAllowUserRegister(ctx context.Context) (bool, error)
+	GetUsersByIDs(ctx context.Context, userIds []int64) (map[int64]*User, error)
 }
 
 // UserTokenRepo Token数据访问接口

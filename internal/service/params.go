@@ -106,7 +106,7 @@ func (s *SysParamsService) GetSysParams(ctx context.Context, req *pb.GetSysParam
 	}
 
 	data := map[string]interface{}{
-		"id":         param.ID,
+		"id":         fmt.Sprintf("%d", param.ID),
 		"paramCode":  param.ParamCode,
 		"paramValue": param.ParamValue,
 		"valueType":  param.ValueType,
@@ -159,7 +159,7 @@ func (s *SysParamsService) SaveSysParams(ctx context.Context, req *pb.SaveSysPar
 	s.uc.ClearConfigCache(ctx)
 
 	data := map[string]interface{}{
-		"id":         created.ID,
+		"id":         fmt.Sprintf("%d", created.ID),
 		"paramCode":  created.ParamCode,
 		"paramValue": created.ParamValue,
 		"valueType":  created.ValueType,

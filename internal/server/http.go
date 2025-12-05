@@ -22,6 +22,9 @@ func NewHTTPServer(c *conf.Bootstrap,
 	sysParams *service.SysParamsService,
 	agent *service.AgentService,
 	user *service.UserService,
+	sysDictType *service.SysDictTypeService,
+	sysDictData *service.SysDictDataService,
+	device *service.DeviceService,
 	tokenService middleware.TokenService,
 	logger log.Logger,
 ) *http.Server {
@@ -50,6 +53,9 @@ func NewHTTPServer(c *conf.Bootstrap,
 	v1.RegisterSysParamsServiceHTTPServer(srv, sysParams)
 	v1.RegisterAgentServiceHTTPServer(srv, agent)
 	v1.RegisterUserServiceHTTPServer(srv, user)
+	v1.RegisterSysDictTypeServiceHTTPServer(srv, sysDictType)
+	v1.RegisterSysDictDataServiceHTTPServer(srv, sysDictData)
+	v1.RegisterDeviceServiceHTTPServer(srv, device)
 	srv.HandlePrefix("/q/", openapiv2.NewHandler())
 	srv.HandleFunc("/ws", service.WebSocketHandler)
 	return srv

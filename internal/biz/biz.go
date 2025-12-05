@@ -13,4 +13,7 @@ var ProviderSet = wire.NewSet(
 	NewUserTokenService,
 	NewParamsServiceAdapter,
 	NewCaptchaServiceAdapter,
+	NewDictTypeUsecase,
+	NewDictDataUsecase,
+	NewDeviceUsecase,
 )

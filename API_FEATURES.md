@@ -213,22 +213,22 @@
 
 | 方法 | 路径 | 功能 | 权限 | 说明 | 状态 |
 |------|------|------|------|------|------|
-| GET | `/admin/dict/type/page` | 分页查询字典类型 | 超级管理员 | 支持按类型编码和名称查询 | ❌ |
-| GET | `/admin/dict/type/{id}` | 获取字典类型详情 | 超级管理员 | 返回字典类型信息 | ❌ |
-| POST | `/admin/dict/type/save` | 保存字典类型 | 超级管理员 | 创建新的字典类型 | ❌ |
-| PUT | `/admin/dict/type/update` | 修改字典类型 | 超级管理员 | 更新字典类型 | ❌ |
-| POST | `/admin/dict/type/delete` | 删除字典类型 | 超级管理员 | 批量删除字典类型 | ❌ |
+| GET | `/admin/dict/type/page` | 分页查询字典类型 | 超级管理员 | 支持按类型编码和名称查询 | ✅ |
+| GET | `/admin/dict/type/{id}` | 获取字典类型详情 | 超级管理员 | 返回字典类型信息 | ✅ |
+| POST | `/admin/dict/type/save` | 保存字典类型 | 超级管理员 | 创建新的字典类型 | ✅ |
+| PUT | `/admin/dict/type/update` | 修改字典类型 | 超级管理员 | 更新字典类型 | ✅ |
+| POST | `/admin/dict/type/delete` | 删除字典类型 | 超级管理员 | 批量删除字典类型 | ✅ |
 
 ### 6.3 字典数据管理 (`/admin/dict/data`)
 
 | 方法 | 路径 | 功能 | 权限 | 说明 | 状态 |
 |------|------|------|------|------|------|
-| GET | `/admin/dict/data/page` | 分页查询字典数据 | 超级管理员 | 必须指定字典类型ID | ❌ |
-| GET | `/admin/dict/data/{id}` | 获取字典数据详情 | 超级管理员 | 返回字典数据信息 | ❌ |
-| POST | `/admin/dict/data/save` | 新增字典数据 | 超级管理员 | 创建新的字典数据 | ❌ |
-| PUT | `/admin/dict/data/update` | 修改字典数据 | 超级管理员 | 更新字典数据 | ❌ |
-| POST | `/admin/dict/data/delete` | 删除字典数据 | 超级管理员 | 批量删除字典数据 | ❌ |
-| GET | `/admin/dict/data/type/{dictType}` | 获取字典数据列表 | 普通用户 | 根据字典类型获取数据列表 | ❌ |
+| GET | `/admin/dict/data/page` | 分页查询字典数据 | 超级管理员 | 必须指定字典类型ID | ✅ |
+| GET | `/admin/dict/data/{id}` | 获取字典数据详情 | 超级管理员 | 返回字典数据信息 | ✅ |
+| POST | `/admin/dict/data/save` | 新增字典数据 | 超级管理员 | 创建新的字典数据 | ✅ |
+| PUT | `/admin/dict/data/update` | 修改字典数据 | 超级管理员 | 更新字典数据 | ✅ |
+| POST | `/admin/dict/data/delete` | 删除字典数据 | 超级管理员 | 批量删除字典数据 | ✅ |
+| GET | `/admin/dict/data/type/{dictType}` | 获取字典数据列表 | 普通用户 | 根据字典类型获取数据列表 | ✅ |
 
 ### 6.4 参数管理 (`/admin/params`)
 

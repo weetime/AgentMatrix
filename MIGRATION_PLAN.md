@@ -61,13 +61,14 @@
 **当前进度**: 
 - ✅ 参数管理 API（0.2）已完成（5个 API）
 - ✅ Redis 集成已完成
-- ⏳ 配置下发 API（0.1）待实现（1个 API）
+- ✅ 配置下发 API（0.1）已完成（1个 API）
+- ✅ Phase 0 全部完成（6个 API）
 
 #### 0.1 配置下发API（给xiaozhi-server使用）
 
-| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 |
-|------|------|------|------|------|----------|
-| 1 | POST | `/config/server-base` | **服务端获取配置** - 返回系统参数（调用buildConfig） | 公开 | 2天 |
+| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 | 状态 |
+|------|------|------|------|------|----------|------|
+| 1 | POST | `/config/server-base` | **服务端获取配置** - 返回系统参数（调用buildConfig） | 公开 | 2天 | ✅ 已完成 |
 
 **核心功能**:
 - 实现 `buildConfig()` 方法：从 `sys_params` 表读取所有参数，按照 `param_code` 的点号分隔构建嵌套 Map
@@ -116,12 +117,12 @@
 
 **目标**: 让 xiaozhi-server 能正常获取完整配置运行（包含模型配置）
 
-| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 |
-|------|------|------|------|------|----------|
-| 7 | POST | `/config/agent-models` | **获取智能体模型** - 根据设备MAC返回模型配置 | 公开 | 3天 |
-| 8 | POST | `/ota/` | OTA版本和设备激活检查 | 公开 | 1天 |
-| 9 | POST | `/ota/activate` | 快速检查激活状态 | 公开 | 0.5天 |
-| 10 | GET | `/ota/` | OTA健康检查 | 公开 | 0.5天 |
+| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 | 状态 |
+|------|------|------|------|------|----------|------|
+| 7 | POST | `/config/agent-models` | **获取智能体模型** - 根据设备MAC返回模型配置 | 公开 | 3天 | ⏳ 进行中 |
+| 8 | POST | `/ota/` | OTA版本和设备激活检查 | 公开 | 1天 | ❌ 未开始 |
+| 9 | POST | `/ota/activate` | 快速检查激活状态 | 公开 | 0.5天 | ❌ 未开始 |
+| 10 | GET | `/ota/` | OTA健康检查 | 公开 | 0.5天 | ❌ 未开始 |
 
 **Phase 1 总计**: 约 5 天（1周）
 
@@ -158,16 +159,16 @@
 
 **目标**: 管理员和用户登录功能
 
-| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 |
-|------|------|------|------|------|----------|
-| 18 | GET | `/user/captcha` | 获取图形验证码 | 公开 | 1天 |
-| 19 | POST | `/user/smsVerification` | 发送短信验证码 | 公开 | 1.5天 |
-| 20 | POST | `/user/login` | 用户登录（支持SM2加密） | 公开 | 2天 |
-| 21 | POST | `/user/register` | 用户注册 | 公开 | 1.5天 |
-| 22 | GET | `/user/info` | 获取当前用户信息 | 普通用户 | 0.5天 |
-| 23 | PUT | `/user/change-password` | 修改密码 | 普通用户 | 1天 |
-| 24 | PUT | `/user/retrieve-password` | 找回密码 | 公开 | 1天 |
-| 25 | GET | `/user/pub-config` | 获取公共配置 | 公开 | 0.5天 |
+| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 | 状态 |
+|------|------|------|------|------|----------|------|
+| 18 | GET | `/user/captcha` | 获取图形验证码 | 公开 | 1天 | ✅ 已完成 |
+| 19 | POST | `/user/smsVerification` | 发送短信验证码 | 公开 | 1.5天 | ✅ 已完成 |
+| 20 | POST | `/user/login` | 用户登录（支持SM2加密） | 公开 | 2天 | ✅ 已完成 |
+| 21 | POST | `/user/register` | 用户注册 | 公开 | 1.5天 | ✅ 已完成 |
+| 22 | GET | `/user/info` | 获取当前用户信息 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 23 | PUT | `/user/change-password` | 修改密码 | 普通用户 | 1天 | ✅ 已完成 |
+| 24 | PUT | `/user/retrieve-password` | 找回密码 | 公开 | 1天 | ✅ 已完成 |
+| 25 | GET | `/user/pub-config` | 获取公共配置 | 公开 | 0.5天 | ✅ 已完成 |
 
 **Phase 3 总计**: 约 8 天（1.5周）
 
@@ -185,46 +186,46 @@
 
 **目标**: 智能体 CRUD 操作
 
-| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 |
-|------|------|------|------|------|----------|
-| 26 | GET | `/agent/list` | 获取用户智能体列表 | 普通用户 | 0.5天 |
-| 27 | GET | `/agent/all` | 智能体列表（管理员） | 超级管理员 | 0.5天 |
-| 28 | GET | `/agent/{id}` | 获取智能体详情 | 普通用户 | 0.5天 |
-| 29 | POST | `/agent` | 创建智能体 | 普通用户 | 1天 |
-| 30 | PUT | `/agent/saveMemory/{macAddress}` | 根据设备更新智能体记忆 | 公开 | 0.5天 |
-| 31 | PUT | `/agent/{id}` | 更新智能体 | 普通用户 | 1天 |
-| 32 | DELETE | `/agent/{id}` | 删除智能体（级联删除） | 普通用户 | 1天 |
-| 33 | GET | `/agent/template` | 获取智能体模板列表 | 普通用户 | 0.5天 |
-| 34 | GET | `/agent/{id}/sessions` | 获取智能体会话列表 | 普通用户 | 0.5天 |
-| 35 | GET | `/agent/{id}/chat-history/{sessionId}` | 获取智能体聊天记录 | 普通用户 | 0.5天 |
-| 36 | GET | `/agent/{id}/chat-history/user` | 获取智能体最近50条聊天记录 | 普通用户 | 0.5天 |
-| 37 | GET | `/agent/{id}/chat-history/audio` | 获取音频内容 | 普通用户 | 0.5天 |
-| 38 | POST | `/agent/audio/{audioId}` | 获取音频下载ID | 普通用户 | 0.5天 |
-| 39 | GET | `/agent/play/{uuid}` | 播放音频 | 公开 | 0.5天 |
+| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 | 状态 |
+|------|------|------|------|------|----------|------|
+| 26 | GET | `/agent/list` | 获取用户智能体列表 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 27 | GET | `/agent/all` | 智能体列表（管理员） | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 28 | GET | `/agent/{id}` | 获取智能体详情 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 29 | POST | `/agent` | 创建智能体 | 普通用户 | 1天 | ✅ 已完成 |
+| 30 | PUT | `/agent/saveMemory/{macAddress}` | 根据设备更新智能体记忆 | 公开 | 0.5天 | ✅ 已完成 |
+| 31 | PUT | `/agent/{id}` | 更新智能体 | 普通用户 | 1天 | ✅ 已完成 |
+| 32 | DELETE | `/agent/{id}` | 删除智能体（级联删除） | 普通用户 | 1天 | ✅ 已完成 |
+| 33 | GET | `/agent/template` | 获取智能体模板列表 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 34 | GET | `/agent/{id}/sessions` | 获取智能体会话列表 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 35 | GET | `/agent/{id}/chat-history/{sessionId}` | 获取智能体聊天记录 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 36 | GET | `/agent/{id}/chat-history/user` | 获取智能体最近50条聊天记录 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 37 | GET | `/agent/{id}/chat-history/audio` | 获取音频内容 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 38 | POST | `/agent/audio/{audioId}` | 获取音频下载ID | 普通用户 | 0.5天 | ✅ 已完成 |
+| 39 | GET | `/agent/play/{uuid}` | 播放音频 | 公开 | 0.5天 | ✅ 已完成 |
 
 **智能体模板管理**:
-| 40 | GET | `/agent/template/page` | 分页查询模板 | 超级管理员 | 0.5天 |
-| 41 | GET | `/agent/template/{id}` | 获取模板详情 | 超级管理员 | 0.5天 |
-| 42 | POST | `/agent/template` | 创建模板 | 超级管理员 | 0.5天 |
-| 43 | PUT | `/agent/template` | 更新模板 | 超级管理员 | 0.5天 |
-| 44 | DELETE | `/agent/template/{id}` | 删除模板 | 超级管理员 | 0.5天 |
-| 45 | POST | `/agent/template/batch-remove` | 批量删除模板 | 超级管理员 | 0.5天 |
+| 40 | GET | `/agent/template/page` | 分页查询模板 | 超级管理员 | 0.5天 | ❌ 未开始 |
+| 41 | GET | `/agent/template/{id}` | 获取模板详情 | 超级管理员 | 0.5天 | ❌ 未开始 |
+| 42 | POST | `/agent/template` | 创建模板 | 超级管理员 | 0.5天 | ❌ 未开始 |
+| 43 | PUT | `/agent/template` | 更新模板 | 超级管理员 | 0.5天 | ❌ 未开始 |
+| 44 | DELETE | `/agent/template/{id}` | 删除模板 | 超级管理员 | 0.5天 | ❌ 未开始 |
+| 45 | POST | `/agent/template/batch-remove` | 批量删除模板 | 超级管理员 | 0.5天 | ❌ 未开始 |
 
 **聊天历史管理**:
-| 46 | POST | `/agent/chat-history/report` | 小智服务聊天上报 | 公开 | 1天 |
-| 47 | POST | `/agent/chat-history/getDownloadUrl/{agentId}/{sessionId}` | 获取下载链接 | 普通用户 | 0.5天 |
-| 48 | GET | `/agent/chat-history/download/{uuid}/current` | 下载当前会话 | 公开 | 0.5天 |
-| 49 | GET | `/agent/chat-history/download/{uuid}/previous` | 下载当前及前20条会话 | 公开 | 0.5天 |
+| 46 | POST | `/agent/chat-history/report` | 小智服务聊天上报 | 公开 | 1天 | ❌ 未开始 |
+| 47 | POST | `/agent/chat-history/getDownloadUrl/{agentId}/{sessionId}` | 获取下载链接 | 普通用户 | 0.5天 | ❌ 未开始 |
+| 48 | GET | `/agent/chat-history/download/{uuid}/current` | 下载当前会话 | 公开 | 0.5天 | ❌ 未开始 |
+| 49 | GET | `/agent/chat-history/download/{uuid}/previous` | 下载当前及前20条会话 | 公开 | 0.5天 | ❌ 未开始 |
 
 **声纹管理**:
-| 50 | POST | `/agent/voice-print` | 创建智能体声纹 | 普通用户 | 1天 |
-| 51 | PUT | `/agent/voice-print` | 更新智能体声纹 | 普通用户 | 0.5天 |
-| 52 | DELETE | `/agent/voice-print/{id}` | 删除智能体声纹 | 普通用户 | 0.5天 |
-| 53 | GET | `/agent/voice-print/list/{id}` | 获取智能体声纹列表 | 普通用户 | 0.5天 |
+| 50 | POST | `/agent/voice-print` | 创建智能体声纹 | 普通用户 | 1天 | ❌ 未开始 |
+| 51 | PUT | `/agent/voice-print` | 更新智能体声纹 | 普通用户 | 0.5天 | ❌ 未开始 |
+| 52 | DELETE | `/agent/voice-print/{id}` | 删除智能体声纹 | 普通用户 | 0.5天 | ❌ 未开始 |
+| 53 | GET | `/agent/voice-print/list/{id}` | 获取智能体声纹列表 | 普通用户 | 0.5天 | ❌ 未开始 |
 
 **MCP 接入点管理**:
-| 54 | GET | `/agent/mcp/address/{agentId}` | 获取 MCP 接入点地址 | 普通用户 | 0.5天 |
-| 55 | GET | `/agent/mcp/tools/{agentId}` | 获取 MCP 工具列表 | 普通用户 | 0.5天 |
+| 54 | GET | `/agent/mcp/address/{agentId}` | 获取 MCP 接入点地址 | 普通用户 | 0.5天 | ❌ 未开始 |
+| 55 | GET | `/agent/mcp/tools/{agentId}` | 获取 MCP 工具列表 | 普通用户 | 0.5天 | ❌ 未开始 |
 
 **Phase 4 总计**: 约 20 天（4周）
 
@@ -286,19 +287,19 @@
 | 80 | GET | `/admin/device/all` | 分页查找设备 | 超级管理员 | 0.5天 |
 
 **字典类型管理**:
-| 81 | GET | `/admin/dict/type/page` | 分页查询字典类型 | 超级管理员 | 0.5天 |
-| 82 | GET | `/admin/dict/type/{id}` | 获取字典类型详情 | 超级管理员 | 0.5天 |
-| 83 | POST | `/admin/dict/type/save` | 保存字典类型 | 超级管理员 | 0.5天 |
-| 84 | PUT | `/admin/dict/type/update` | 修改字典类型 | 超级管理员 | 0.5天 |
-| 85 | POST | `/admin/dict/type/delete` | 删除字典类型 | 超级管理员 | 0.5天 |
+| 81 | GET | `/admin/dict/type/page` | 分页查询字典类型 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 82 | GET | `/admin/dict/type/{id}` | 获取字典类型详情 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 83 | POST | `/admin/dict/type/save` | 保存字典类型 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 84 | PUT | `/admin/dict/type/update` | 修改字典类型 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 85 | POST | `/admin/dict/type/delete` | 删除字典类型 | 超级管理员 | 0.5天 | ✅ 已完成 |
 
 **字典数据管理**:
-| 86 | GET | `/admin/dict/data/page` | 分页查询字典数据 | 超级管理员 | 0.5天 |
-| 87 | GET | `/admin/dict/data/{id}` | 获取字典数据详情 | 超级管理员 | 0.5天 |
-| 88 | POST | `/admin/dict/data/save` | 新增字典数据 | 超级管理员 | 0.5天 |
-| 89 | PUT | `/admin/dict/data/update` | 修改字典数据 | 超级管理员 | 0.5天 |
-| 90 | POST | `/admin/dict/data/delete` | 删除字典数据 | 超级管理员 | 0.5天 |
-| 91 | GET | `/admin/dict/data/type/{dictType}` | 获取字典数据列表 | 普通用户 | 0.5天 |
+| 86 | GET | `/admin/dict/data/page` | 分页查询字典数据 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 87 | GET | `/admin/dict/data/{id}` | 获取字典数据详情 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 88 | POST | `/admin/dict/data/save` | 新增字典数据 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 89 | PUT | `/admin/dict/data/update` | 修改字典数据 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 90 | POST | `/admin/dict/data/delete` | 删除字典数据 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 91 | GET | `/admin/dict/data/type/{dictType}` | 获取字典数据列表 | 普通用户 | 0.5天 | ✅ 已完成 |
 
 **服务端管理**:
 | 92 | GET | `/admin/server/server-list` | 获取 WebSocket 服务端列表 | 超级管理员 | 0.5天 |
@@ -754,7 +755,7 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
   - 按照 `param_code` 点号分隔构建嵌套 Map
   - 根据 `value_type` 转换数据类型（string, number, boolean, array, json）
   - 实现 Redis 缓存逻辑
-- [ ] Day 5: 实现 `POST /config/server-base` API
+- [x] Day 5: 实现 `POST /config/server-base` API
   - 实现配置服务接口
   - 支持从缓存读取
   - 编写单元测试
@@ -774,7 +775,7 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
   - 实现声纹地址验证
   - 实现 MQTT 密钥验证
   - 实现参数值类型验证
-- [ ] Day 5: 集成测试和文档
+- [x] Day 5: 集成测试和文档
   - 编写集成测试
   - 验证配置下发功能
   - 更新 API 文档
@@ -818,16 +819,16 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
 - [ ] Day 1-2: 实现设备管理 API（6个）
   - 设备注册、绑定、解绑、更新、手动添加
   - MQTT 网关转发
-- [ ] Day 3-4: 实现 JWT 认证中间件
+- [x] Day 3-4: 实现 JWT 认证中间件
   - Token 生成和验证
   - 认证中间件
-- [ ] Day 5: 实现用户基础 API（获取用户信息）
+- [x] Day 5: 实现用户基础 API（获取用户信息）
 
-**Week 4**:
-- [ ] Day 1: 实现图形验证码
-- [ ] Day 2-3: 实现用户登录（支持 SM2 加密）
-- [ ] Day 4: 实现用户注册
-- [ ] Day 5: 实现密码修改和找回密码
+**Week 5**:
+- [x] Day 1: 实现图形验证码
+- [x] Day 2-3: 实现用户登录（支持 SM2 加密）
+- [x] Day 4: 实现用户注册
+- [x] Day 5: 实现密码修改和找回密码
 
 **交付物**:
 - ✅ Phase 2 的 6 个设备管理 API
@@ -839,13 +840,13 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
 ### 第三阶段：智能体 + 模型管理（3周）
 
 **Week 6-7**:
-- [ ] 创建 Phase 4 所需的 Ent Schema
+- [x] 创建 Phase 4 所需的 Ent Schema
   - `ai_agent_chat_history.go`
   - `ai_agent_chat_audio.go`
   - `ai_agent_voice_print.go`
-- [ ] 实现智能体 CRUD API（8个）
+- [x] 实现智能体 CRUD API（14个基础 API）
 - [ ] 实现智能体模板管理 API（6个）
-- [ ] 实现聊天记录 API（4个）
+- [x] 实现聊天记录 API（4个基础 API）
 - [ ] 实现声纹管理 API（4个）
 - [ ] 实现 MCP 接入点 API（2个）
 
@@ -865,18 +866,18 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
 ### 第四阶段：系统管理（2周）
 
 **Week 9**:
-- [ ] 创建 Phase 6 所需的 Ent Schema
+- [x] 创建 Phase 6 所需的 Ent Schema
   - `sys_dict_type.go`
   - `sys_dict_data.go`
   - `ai_ota.go`
 - [ ] 实现管理员管理 API（5个）
-- [ ] 实现字典管理 API（11个）
-- [ ] 实现参数管理 API（5个）
+- [x] 实现字典管理 API（11个）
+- [x] 实现参数管理 API（5个）
 
-**Week 9**:
+**Week 10**:
 - [ ] 实现服务端管理 API（2个）
 - [ ] 实现 OTA 固件管理 API（8个）
-- [ ] 实现参数验证逻辑（WebSocket、OTA、MCP、声纹、MQTT密钥）
+- [x] 实现参数验证逻辑（WebSocket、OTA、MCP、声纹、MQTT密钥）
 - [ ] 实现 WebSocket 通知功能
 
 **交付物**:
@@ -984,25 +985,27 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
 
 ### 10.1 迁移统计
 
-| 项目 | 数量 |
-|------|------|
-| **总 API 数量** | ~127 个 |
-| **Phase 0 (P0)** | 6 个（参数管理 + 配置下发） |
-| **Phase 1 (P0)** | 4 个（完整配置下发 + OTA） |
-| **Phase 2-3 (P1)** | 15 个（设备管理 + 认证） |
-| **Phase 4-5 (P2)** | 50 个（智能体 + 模型） |
-| **Phase 6-7 (P3)** | 52 个（系统管理 + 高级功能） |
-| **预计总工期** | 10-12 周（不含 Phase 7 则 8-10 周） |
-| **Phase 0 交付时间** | 1.5 周内可让参数管理和配置下发正常工作 |
+| 项目 | 数量 | 已完成 | 进行中 | 未开始 |
+|------|------|--------|--------|--------|
+| **总 API 数量** | ~127 个 | **39 个** | **1 个** | **87 个** |
+| **Phase 0 (P0)** | 6 个（参数管理 + 配置下发） | ✅ **6 个** | - | - |
+| **Phase 1 (P0)** | 4 个（完整配置下发 + OTA） | - | ⏳ **1 个** | ❌ **3 个** |
+| **Phase 2-3 (P1)** | 15 个（设备管理 + 认证） | ✅ **8 个** | - | ❌ **7 个** |
+| **Phase 4-5 (P2)** | 50 个（智能体 + 模型） | ✅ **14 个** | - | ❌ **36 个** |
+| **Phase 6-7 (P3)** | 52 个（系统管理 + 高级功能） | ✅ **11 个** | - | ❌ **41 个** |
+| **预计总工期** | 10-12 周（不含 Phase 7 则 8-10 周） | - | - | - |
+| **Phase 0 交付时间** | 1.5 周内可让参数管理和配置下发正常工作 | ✅ **已完成** | - | - |
 
 ### 10.2 关键里程碑
 
 - ✅ **Week 2**: Phase 0 完成，参数管理和配置下发功能可用
-- ✅ **Week 3**: Phase 1 完成，xiaozhi-server 可以正常获取完整配置
-- ✅ **Week 5**: Phase 2-3 完成，设备管理和用户认证可用
-- ✅ **Week 8**: Phase 4-5 完成，智能体和模型管理可用
-- ✅ **Week 10**: Phase 6 完成，系统管理功能完整
-- ✅ **Week 12**: Phase 7 完成（可选），所有功能迁移完成
+- ⏳ **Week 3**: Phase 1 进行中，xiaozhi-server 可以正常获取完整配置（部分完成）
+- ✅ **Week 5**: Phase 3 完成，用户认证功能可用（8个 API）
+- ⏳ **Week 6-7**: Phase 4 部分完成，智能体基础功能可用（14个 API）
+- ⏳ **Week 9**: Phase 6 部分完成，字典和参数管理功能可用（11个 API）
+- ❌ **Week 8**: Phase 4-5 待完成，智能体和模型管理完整功能
+- ❌ **Week 10**: Phase 6 待完成，系统管理功能完整
+- ❌ **Week 12**: Phase 7 待完成（可选），所有功能迁移完成
 
 ### 10.3 下一步行动
 
@@ -1011,14 +1014,38 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
    - ✅ 已实现 Redis 工具类（`internal/kit/redis.go`）
    - ✅ 已实现 `buildConfig()` 核心逻辑（`internal/biz/config.go`）
    - ✅ 已实现参数管理 CRUD API（`internal/service/params.go`）
-   - ⏳ 待实现配置下发 API (`POST /config/server-base`)
-   - 确保与 xiaozhi-server 兼容
+   - ✅ 已实现配置下发 API (`POST /config/server-base`)
+   - ✅ 确保与 xiaozhi-server 兼容
 
-2. **并行工作**:
+2. **Phase 3 进度**:
+   - ✅ 已实现认证模块所有 API（8个）
+   - ✅ 已实现用户登录、注册、密码管理等功能
+   - ✅ 已实现图形验证码和短信验证码
+
+3. **Phase 4 进度**:
+   - ✅ 已实现智能体基础 CRUD API（14个）
+   - ✅ 已实现智能体聊天记录相关 API（4个）
+   - ⏳ 待实现智能体模板管理 API（6个）
+   - ⏳ 待实现声纹管理 API（4个）
+   - ⏳ 待实现 MCP 接入点 API（2个）
+
+4. **Phase 6 进度**:
+   - ✅ 已实现字典类型管理 API（5个）
+   - ✅ 已实现字典数据管理 API（6个）
+   - ✅ 已实现参数管理 API（5个）
+   - ⏳ 待实现管理员管理 API（5个）
+   - ⏳ 待实现服务端管理 API（2个）
+   - ⏳ 待实现 OTA 固件管理 API（8个）
+
+5. **Phase 1 进度**:
+   - ⏳ 正在实现配置下发 API (`POST /config/agent-models`)
+   - ❌ 待实现 OTA 相关 API（3个）
+
+6. **并行工作**:
    - 前端团队可以开始准备 Go 版本的 API 调用
    - 测试团队可以准备测试用例
 
-3. **持续集成**:
+7. **持续集成**:
    - 每个 Phase 完成后立即部署到测试环境
    - 进行集成测试和性能测试
 

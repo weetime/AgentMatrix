@@ -1,0 +1,150 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
+
+import "protos/v1/agentmatrix.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/wrappers.proto";
+import "validate/validate.proto";
+
+// DeviceService 设备管理服务
+service DeviceService {
+  // 设备注册（生成验证码）
+  rpc RegisterDevice(DeviceRegisterRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/device/register"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "设备注册（生成验证码）";
+    };
+  }
+
+  // 绑定设备
+  rpc BindDevice(DeviceBindRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/device/bind/{agent_id}/{device_code}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "绑定设备";
+    };
+  }
+
+  // 获取已绑定设备
+  rpc GetUserDevices(GetUserDevicesRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/device/bind/{agent_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取已绑定设备";
+    };
+  }
+
+  // 设备在线状态查询（转发MQTT）
+  rpc ForwardToMqttGateway(DeviceStatusRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/device/bind/{agent_id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "设备在线状态查询（转发MQTT）";
+    };
+  }
+
+  // 解绑设备
+  rpc UnbindDevice(DeviceUnbindRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/device/unbind"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "解绑设备";
+    };
+  }
+
+  // 更新设备信息
+  rpc UpdateDeviceInfo(DeviceUpdateInfoRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/device/update/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "更新设备信息";
+    };
+  }
+
+  // 手动添加设备
+  rpc ManualAddDevice(DeviceManualAddRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/device/manual-add"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "手动添加设备";
+    };
+  }
+}
+
+// DeviceEntity 设备实体（与Java DeviceEntity一致）
+message DeviceEntity {
+  string id = 1;                    // 设备ID
+  string user_id = 2;               // 用户ID（格式化为字符串）
+  string mac_address = 3;           // MAC地址
+  string last_connected_at = 4;     // 最后连接时间
+  int32 auto_update = 5;            // 自动更新开关(0关闭/1开启)
+  string board = 6;                  // 设备硬件型号
+  string alias = 7;                 // 设备别名
+  string agent_id = 8;              // 智能体ID
+  string app_version = 9;           // 固件版本号
+  int32 sort = 10;                  // 排序
+  string creator = 11;               // 创建者ID（格式化为字符串）
+  string create_date = 12;          // 创建时间
+  string updater = 13;              // 更新者ID（格式化为字符串）
+  string update_date = 14;          // 更新时间
+}
+
+// DeviceRegisterRequest 设备注册请求
+message DeviceRegisterRequest {
+  string mac_address = 1 [(validate.rules).string.min_len = 1];  // MAC地址
+}
+
+// DeviceBindRequest 设备绑定请求
+message DeviceBindRequest {
+  string agent_id = 1 [(validate.rules).string.min_len = 1];     // 智能体ID
+  string device_code = 2 [(validate.rules).string.min_len = 1]; // 设备验证码
+}
+
+// GetUserDevicesRequest 获取用户设备列表请求
+message GetUserDevicesRequest {
+  string agent_id = 1 [(validate.rules).string.min_len = 1];     // 智能体ID
+}
+
+// DeviceUnbindRequest 解绑设备请求
+message DeviceUnbindRequest {
+  string device_id = 1 [(validate.rules).string.min_len = 1];     // 设备ID
+}
+
+// DeviceUpdateInfoRequest 更新设备信息请求
+message DeviceUpdateInfoRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];            // 设备ID
+  google.protobuf.Int32Value auto_update = 2;                     // 自动更新状态（0或1）
+  google.protobuf.StringValue alias = 3;                          // 设备别名
+}
+
+// DeviceManualAddRequest 手动添加设备请求
+message DeviceManualAddRequest {
+  string agent_id = 1 [(validate.rules).string.min_len = 1];     // 智能体ID
+  string board = 2;                                              // 设备型号
+  string app_version = 3;                                        // 固件版本
+  string mac_address = 4 [(validate.rules).string.min_len = 1]; // MAC地址
+}
+
+// DeviceStatusRequest 设备在线状态查询请求（转发MQTT）
+message DeviceStatusRequest {
+  string agent_id = 1 [(validate.rules).string.min_len = 1];      // 智能体ID
+  string request_body = 2;                                       // 原始请求体（JSON字符串）
+}

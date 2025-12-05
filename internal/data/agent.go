@@ -11,6 +11,7 @@ import (
 	"github.com/weetime/agent-matrix/internal/data/ent/agentchathistory"
 	"github.com/weetime/agent-matrix/internal/data/ent/agentpluginmapping"
 	"github.com/weetime/agent-matrix/internal/data/ent/agenttemplate"
+	"github.com/weetime/agent-matrix/internal/data/ent/device"
 	"github.com/weetime/agent-matrix/internal/kit"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -41,12 +42,20 @@ func (r *agentRepo) ListUserAgents(ctx context.Context, userId int64) ([]*biz.Ag
 
 	result := make([]*biz.AgentDTO, len(agents))
 	for i, a := range agents {
+		// 获取设备数量
+		deviceCount, err := r.GetDeviceCountByAgentID(ctx, a.ID)
+		if err != nil {
+			r.log.Warnf("Failed to get device count for agent %s: %v", a.ID, err)
+			deviceCount = 0
+		}
+
 		result[i] = &biz.AgentDTO{
 			ID:            a.ID,
 			AgentName:     a.AgentName,
 			SystemPrompt:  a.SystemPrompt,
 			SummaryMemory: a.SummaryMemory,
 			MemModelID:    a.MemModelID,
+			DeviceCount:   int32(deviceCount),
 			// 注意：模型名称需要通过 ModelService 查询，这里先留空
 			// TTSModelName, TTSVoiceName, LLMModelName, VLLMModelName 需要关联查询
 		}
@@ -536,9 +545,13 @@ func (r *agentRepo) DeleteAudioByAgentID(ctx context.Context, agentId string) er
 
 // GetDeviceCountByAgentID 获取智能体的设备数量
 func (r *agentRepo) GetDeviceCountByAgentID(ctx context.Context, agentId string) (int, error) {
-	// 需要 Device schema，这里先返回 0
-	// TODO: 实现设备数量查询
-	return 0, nil
+	count, err := r.data.db.Device.Query().
+		Where(device.AgentIDEQ(agentId)).
+		Count(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 // GetDefaultAgentByMacAddress 根据 MAC 地址获取默认智能体
