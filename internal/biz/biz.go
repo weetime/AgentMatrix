@@ -9,4 +9,8 @@ var ProviderSet = wire.NewSet(
 	NewApiKeyUsecase,
 	NewConfigUsecase,
 	NewAgentUsecase,
+	NewUserUsecase,
+	NewUserTokenService,
+	NewParamsServiceAdapter,
+	NewCaptchaServiceAdapter,
 )

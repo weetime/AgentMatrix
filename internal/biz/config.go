@@ -524,3 +524,38 @@ func (uc *ConfigUsecase) ClearConfigCache(ctx context.Context) {
 		uc.redisClient.Delete(ctx, kit.RedisKeyServerConfig)
 	}
 }
+
+// GetValue 获取参数值
+func (uc *ConfigUsecase) GetValue(ctx context.Context, paramCode string, isCache bool) (string, error) {
+	param, err := uc.repo.GetSysParamsByCode(ctx, paramCode)
+	if err != nil {
+		return "", err
+	}
+	if param == nil {
+		return "", nil
+	}
+	return param.ParamValue, nil
+}
+
+// GetValueObject 获取参数值并转换为对象
+func (uc *ConfigUsecase) GetValueObject(ctx context.Context, paramCode string, isCache bool, dest interface{}) error {
+	value, err := uc.GetValue(ctx, paramCode, isCache)
+	if err != nil {
+		return err
+	}
+	if value == "" {
+		return nil
+	}
+	// 简单的字符串到bool/int转换
+	if boolPtr, ok := dest.(*bool); ok {
+		*boolPtr = value == "true"
+		return nil
+	}
+	if intPtr, ok := dest.(*int); ok {
+		if intVal, err := strconv.Atoi(value); err == nil {
+			*intPtr = intVal
+		}
+		return nil
+	}
+	return nil
+}

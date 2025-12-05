@@ -23,6 +23,8 @@ var ProviderSet = wire.NewSet(
 	NewApiKeyRepo,
 	NewConfigRepo,
 	NewAgentRepo,
+	NewUserRepo,
+	NewUserTokenRepo,
 	kit.NewRedisClient,
 )
 

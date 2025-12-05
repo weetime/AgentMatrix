@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/weetime/agent-matrix/internal/conf"
+	"github.com/weetime/agent-matrix/internal/middleware"
 	"github.com/weetime/agent-matrix/internal/service"
 	v1 "github.com/weetime/agent-matrix/protos/v1"
 
@@ -20,6 +21,8 @@ func NewHTTPServer(c *conf.Bootstrap,
 	config *service.ConfigService,
 	sysParams *service.SysParamsService,
 	agent *service.AgentService,
+	user *service.UserService,
+	tokenService middleware.TokenService,
 	logger log.Logger,
 ) *http.Server {
 
@@ -29,6 +32,7 @@ func NewHTTPServer(c *conf.Bootstrap,
 			tracing.Server(),
 			validate.Validator(),
 			logging.Server(logger),
+			middleware.AuthMiddleware(tokenService), // 添加认证中间件
 		),
 	}
 	if c.Server.Http.Network != "" {
@@ -45,6 +49,7 @@ func NewHTTPServer(c *conf.Bootstrap,
 	v1.RegisterConfigServiceHTTPServer(srv, config)
 	v1.RegisterSysParamsServiceHTTPServer(srv, sysParams)
 	v1.RegisterAgentServiceHTTPServer(srv, agent)
+	v1.RegisterUserServiceHTTPServer(srv, user)
 	srv.HandlePrefix("/q/", openapiv2.NewHandler())
 	srv.HandleFunc("/ws", service.WebSocketHandler)
 	return srv

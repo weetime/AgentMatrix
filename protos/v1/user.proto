@@ -1,0 +1,191 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
+
+import "google/api/annotations.proto";
+import "protos/v1/agentmatrix.proto";
+import "validate/validate.proto";
+
+// UserService 用户服务
+service UserService {
+  // 获取图形验证码
+  rpc GetCaptcha(GetCaptchaRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/user/captcha"
+    };
+  }
+  
+  // 发送短信验证码
+  rpc SendSMSVerification(SendSMSVerificationRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/user/smsVerification"
+      body: "*"
+    };
+  }
+  
+  // 用户登录
+  rpc Login(LoginRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/user/login"
+      body: "*"
+    };
+  }
+  
+  // 用户注册
+  rpc Register(RegisterRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/user/register"
+      body: "*"
+    };
+  }
+  
+  // 获取用户信息
+  rpc GetUserInfo(GetUserInfoRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/user/info"
+    };
+  }
+  
+  // 修改密码
+  rpc ChangePassword(ChangePasswordRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/user/change-password"
+      body: "*"
+    };
+  }
+  
+  // 找回密码
+  rpc RetrievePassword(RetrievePasswordRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/user/retrieve-password"
+      body: "*"
+    };
+  }
+  
+  // 获取公共配置
+  rpc GetPubConfig(GetPubConfigRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/user/pub-config"
+    };
+  }
+}
+
+// GetCaptchaRequest 获取验证码请求
+message GetCaptchaRequest {
+  string uuid = 1 [(validate.rules).string.min_len = 1];
+}
+
+// GetCaptchaResponse 获取验证码响应
+message GetCaptchaResponse {
+  string base64_image = 1;
+  string uuid = 2;
+}
+
+// SendSMSVerificationRequest 发送短信验证码请求
+message SendSMSVerificationRequest {
+  string phone = 1 [(validate.rules).string.min_len = 1];
+  string captcha = 2 [(validate.rules).string.min_len = 1];
+  string captcha_id = 3 [(validate.rules).string.min_len = 1];
+}
+
+// SendSMSVerificationResponse 发送短信验证码响应
+message SendSMSVerificationResponse {
+}
+
+// LoginRequest 登录请求
+message LoginRequest {
+  string username = 1 [(validate.rules).string.min_len = 1];
+  string password = 2 [(validate.rules).string.min_len = 1];
+  string captcha_id = 3 [(validate.rules).string.min_len = 1];
+}
+
+// LoginResponse 登录响应
+message LoginResponse {
+  TokenDTO token = 1;
+}
+
+// TokenDTO Token信息
+message TokenDTO {
+  string token = 1;
+  int32 expire = 2;
+  string client_hash = 3;
+}
+
+// RegisterRequest 注册请求
+message RegisterRequest {
+  string username = 1 [(validate.rules).string.min_len = 1];
+  string password = 2 [(validate.rules).string.min_len = 1];
+  string captcha_id = 3 [(validate.rules).string.min_len = 1];
+  string mobile_captcha = 4; // 手机验证码（可选）
+}
+
+// RegisterResponse 注册响应
+message RegisterResponse {
+}
+
+// GetUserInfoRequest 获取用户信息请求
+message GetUserInfoRequest {
+}
+
+// GetUserInfoResponse 获取用户信息响应
+message GetUserInfoResponse {
+  UserDetail user = 1;
+}
+
+// UserDetail 用户详情
+message UserDetail {
+  int64 id = 1;
+  string username = 2;
+  int32 super_admin = 3;
+  int32 status = 4;
+  string token = 5;
+}
+
+// ChangePasswordRequest 修改密码请求
+message ChangePasswordRequest {
+  string password = 1 [(validate.rules).string.min_len = 1];
+  string new_password = 2 [(validate.rules).string.min_len = 1];
+}
+
+// ChangePasswordResponse 修改密码响应
+message ChangePasswordResponse {
+}
+
+// RetrievePasswordRequest 找回密码请求
+message RetrievePasswordRequest {
+  string phone = 1 [(validate.rules).string.min_len = 1];
+  string code = 2 [(validate.rules).string.min_len = 1];
+  string password = 3 [(validate.rules).string.min_len = 1];
+  string captcha_id = 4 [(validate.rules).string.min_len = 1];
+}
+
+// RetrievePasswordResponse 找回密码响应
+message RetrievePasswordResponse {
+}
+
+// GetPubConfigRequest 获取公共配置请求
+message GetPubConfigRequest {
+}
+
+// GetPubConfigResponse 获取公共配置响应
+message GetPubConfigResponse {
+  bool enable_mobile_register = 1;
+  string version = 2;
+  string year = 3;
+  bool allow_user_register = 4;
+  repeated DictDataItem mobile_area_list = 5;
+  string beian_icp_num = 6;
+  string beian_ga_num = 7;
+  string name = 8;
+  string sm2_public_key = 9;
+}
+
+// DictDataItem 字典数据项
+message DictDataItem {
+  int64 id = 1;
+  string dict_label = 2;
+  string dict_value = 3;
+  int32 dict_sort = 4;
+}

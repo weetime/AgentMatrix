@@ -125,6 +125,11 @@ func (r *RedisClient) SetObject(ctx context.Context, key string, value interface
 	return r.Set(ctx, key, string(data), expiration)
 }
 
+// GetClient 获取底层的redis.Client（用于需要直接访问redis.Client的场景）
+func (r *RedisClient) GetClient() *redis.Client {
+	return r.client
+}
+
 // RedisKeys Redis Key 常量
 const (
 	RedisKeyServerConfig = "server:config" // 服务器配置缓存 Key

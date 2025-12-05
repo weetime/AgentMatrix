@@ -7,6 +7,7 @@ import (
 
 	"github.com/weetime/agent-matrix/internal/biz"
 	"github.com/weetime/agent-matrix/internal/kit"
+	"github.com/weetime/agent-matrix/internal/middleware"
 	pb "github.com/weetime/agent-matrix/protos/v1"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -25,8 +26,15 @@ func NewAgentService(uc *biz.AgentUsecase) *AgentService {
 
 // ListUserAgents 获取用户智能体列表
 func (s *AgentService) ListUserAgents(ctx context.Context, req *pb.Empty) (*pb.Response, error) {
-	// TODO: 从 context 获取用户ID（需要实现认证中间件）
-	userId := int64(1) // 临时值，后续需要从 context 获取
+	// 从 context 获取用户ID
+	userId, err := middleware.GetUserIdFromContext(ctx)
+	if err != nil {
+		// 如果无法获取用户ID，返回未授权错误
+		return &pb.Response{
+			Code: 401,
+			Msg:  "未授权，请先登录",
+		}, nil
+	}
 
 	agents, err := s.uc.ListUserAgents(ctx, userId)
 	if err != nil {

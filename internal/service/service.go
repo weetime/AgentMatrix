@@ -12,6 +12,7 @@ var ProviderSet = wire.NewSet(
 	NewConfigService,
 	NewSysParamsService,
 	NewAgentService,
+	NewUserService,
 )
 
 var pbErrorInvalidUUID = pb.ErrorInvalidArgument("uuid is invalid")
