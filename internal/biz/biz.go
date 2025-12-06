@@ -16,4 +16,7 @@ var ProviderSet = wire.NewSet(
 	NewDictTypeUsecase,
 	NewDictDataUsecase,
 	NewDeviceUsecase,
+	NewModelUsecase,
+	NewModelProviderUsecase,
+	NewTtsVoiceUsecase,
 )

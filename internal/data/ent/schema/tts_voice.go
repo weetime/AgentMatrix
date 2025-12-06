@@ -48,6 +48,14 @@ func (TtsVoice) Fields() []ent.Field {
 			MaxLen(255).
 			Optional().
 			Comment("备注"),
+		field.String("reference_audio").
+			MaxLen(500).
+			Optional().
+			Comment("参考音频路径"),
+		field.String("reference_text").
+			MaxLen(500).
+			Optional().
+			Comment("参考文本"),
 		field.Int32("sort").
 			Default(0).
 			Comment("排序"),

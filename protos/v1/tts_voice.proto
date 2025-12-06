@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
+
+import "protos/v1/agentmatrix.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/wrappers.proto";
+import "validate/validate.proto";
+
+// PageTtsVoiceRequest 分页查询音色请求
+message PageTtsVoiceRequest {
+  string tts_model_id = 1 [(validate.rules).string.min_len = 1];  // 对应TTS模型主键（必填）
+  google.protobuf.StringValue name = 2;  // 音色名称（模糊查询）
+  int64 page = 3 [(validate.rules).int64.gt = 0];  // 页码，从1开始
+  int64 limit = 4 [(validate.rules).int64.gt = 0]; // 每页数量
+}
+
+// SaveTtsVoiceRequest 保存音色请求
+message SaveTtsVoiceRequest {
+  string languages = 1 [(validate.rules).string.min_len = 1];  // 语言（必填）
+  string name = 2 [(validate.rules).string.min_len = 1];  // 音色名称（必填）
+  string remark = 3;  // 备注
+  string reference_audio = 4;  // 参考音频路径
+  string reference_text = 5;  // 参考文本
+  int32 sort = 6;  // 排序
+  string tts_model_id = 7 [(validate.rules).string.min_len = 1];  // 对应TTS模型主键（必填）
+  string tts_voice = 8 [(validate.rules).string.min_len = 1];  // 音色编码（必填）
+  string voice_demo = 9;  // 音频播放地址
+}
+
+// UpdateTtsVoiceRequest 修改音色请求
+message UpdateTtsVoiceRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];  // 音色ID（必填）
+  string languages = 2 [(validate.rules).string.min_len = 1];  // 语言（必填）
+  string name = 3 [(validate.rules).string.min_len = 1];  // 音色名称（必填）
+  string remark = 4;  // 备注
+  string reference_audio = 5;  // 参考音频路径
+  string reference_text = 6;  // 参考文本
+  int32 sort = 7;  // 排序
+  string tts_model_id = 8 [(validate.rules).string.min_len = 1];  // 对应TTS模型主键（必填）
+  string tts_voice = 9 [(validate.rules).string.min_len = 1];  // 音色编码（必填）
+  string voice_demo = 10;  // 音频播放地址
+}
+
+// DeleteTtsVoiceRequest 删除音色请求
+message DeleteTtsVoiceRequest {
+  repeated string ids = 1 [(validate.rules).repeated.min_items = 1];  // 音色ID列表
+}
+
+// TtsVoiceService 音色管理服务
+service TtsVoiceService {
+  // PageTtsVoice 分页查找音色
+  rpc PageTtsVoice(PageTtsVoiceRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/ttsVoice"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "分页查找音色";
+    };
+  }
+
+  // SaveTtsVoice 保存音色
+  rpc SaveTtsVoice(SaveTtsVoiceRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/ttsVoice"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "保存音色";
+    };
+  }
+
+  // UpdateTtsVoice 修改音色
+  rpc UpdateTtsVoice(UpdateTtsVoiceRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/ttsVoice/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "修改音色";
+    };
+  }
+
+  // DeleteTtsVoice 删除音色
+  rpc DeleteTtsVoice(DeleteTtsVoiceRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/ttsVoice/delete"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除音色";
+    };
+  }
+}

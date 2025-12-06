@@ -136,15 +136,15 @@
 
 **目标**: 让设备能正常注册和绑定
 
-| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 |
-|------|------|------|------|------|----------|
-| 11 | POST | `/device/register` | 设备注册（生成验证码） | 公开 | 1天 |
-| 12 | POST | `/device/bind/{agentId}/{deviceCode}` | 设备绑定 | 普通用户 | 1天 |
-| 13 | GET | `/device/bind/{agentId}` | 获取已绑定设备 | 普通用户 | 0.5天 |
-| 14 | POST | `/device/bind/{agentId}` | 设备在线状态查询（转发MQTT） | 普通用户 | 1天 |
-| 15 | POST | `/device/unbind` | 解绑设备 | 普通用户 | 0.5天 |
-| 16 | PUT | `/device/update/{id}` | 更新设备信息 | 普通用户 | 0.5天 |
-| 17 | POST | `/device/manual-add` | 手动添加设备 | 普通用户 | 0.5天 |
+| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 | 状态 |
+|------|------|------|------|------|----------|------|
+| 11 | POST | `/device/register` | 设备注册（生成验证码） | 公开 | 1天 | ✅ 已完成 |
+| 12 | POST | `/device/bind/{agentId}/{deviceCode}` | 设备绑定 | 普通用户 | 1天 | ✅ 已完成 |
+| 13 | GET | `/device/bind/{agentId}` | 获取已绑定设备 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 14 | POST | `/device/bind/{agentId}` | 设备在线状态查询（转发MQTT） | 普通用户 | 1天 | ✅ 已完成 |
+| 15 | POST | `/device/unbind` | 解绑设备 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 16 | PUT | `/device/update/{id}` | 更新设备信息 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 17 | POST | `/device/manual-add` | 手动添加设备 | 普通用户 | 0.5天 | ✅ 已完成 |
 
 **Phase 2 总计**: 约 5 天（1周）
 
@@ -240,32 +240,32 @@
 
 **目标**: 模型配置和供应器管理
 
-| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 |
-|------|------|------|------|------|----------|
-| 56 | GET | `/models/names` | 获取所有模型名称 | 普通用户 | 0.5天 |
-| 57 | GET | `/models/llm/names` | 获取 LLM 模型信息 | 普通用户 | 0.5天 |
-| 58 | GET | `/models/{modelType}/provideTypes` | 获取模型供应器列表 | 超级管理员 | 0.5天 |
-| 59 | GET | `/models/list` | 获取模型配置列表 | 超级管理员 | 0.5天 |
-| 60 | POST | `/models/{modelType}/{provideCode}` | 新增模型配置 | 超级管理员 | 1天 |
-| 61 | PUT | `/models/{modelType}/{provideCode}/{id}` | 编辑模型配置 | 超级管理员 | 1天 |
-| 62 | DELETE | `/models/{id}` | 删除模型配置 | 超级管理员 | 0.5天 |
-| 63 | GET | `/models/{id}` | 获取模型配置 | 超级管理员 | 0.5天 |
-| 64 | PUT | `/models/enable/{id}/{status}` | 启用/关闭模型 | 超级管理员 | 0.5天 |
-| 65 | PUT | `/models/default/{id}` | 设置默认模型 | 超级管理员 | 0.5天 |
-| 66 | GET | `/models/{modelId}/voices` | 获取模型音色 | 普通用户 | 0.5天 |
+| 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 | 状态 |
+|------|------|------|------|------|----------|------|
+| 56 | GET | `/models/names` | 获取所有模型名称 | 普通用户 | 0.5天 | ✅ 已实现 |
+| 57 | GET | `/models/llm/names` | 获取 LLM 模型信息 | 普通用户 | 0.5天 | ✅ 已实现 |
+| 58 | GET | `/models/{modelType}/provideTypes` | 获取模型供应器列表 | 超级管理员 | 0.5天 | ✅ 已实现 |
+| 59 | GET | `/models/list` | 获取模型配置列表 | 超级管理员 | 0.5天 | ✅ 已实现 |
+| 60 | POST | `/models/{modelType}/{provideCode}` | 新增模型配置 | 超级管理员 | 1天 | ✅ 已实现 |
+| 61 | PUT | `/models/{modelType}/{provideCode}/{id}` | 编辑模型配置 | 超级管理员 | 1天 | ✅ 已实现 |
+| 62 | DELETE | `/models/{id}` | 删除模型配置 | 超级管理员 | 0.5天 | ✅ 已实现 |
+| 63 | GET | `/models/{id}` | 获取模型配置 | 超级管理员 | 0.5天 | ✅ 已实现 |
+| 64 | PUT | `/models/enable/{id}/{status}` | 启用/关闭模型 | 超级管理员 | 0.5天 | ✅ 已实现 |
+| 65 | PUT | `/models/default/{id}` | 设置默认模型 | 超级管理员 | 0.5天 | ✅ 已实现 |
+| 66 | GET | `/models/{modelId}/voices` | 获取模型音色 | 普通用户 | 0.5天 | ⚠️ 部分实现（返回空列表，需完善） |
 
 **模型供应器管理**:
-| 67 | GET | `/models/provider` | 获取模型供应器列表 | 超级管理员 | 0.5天 |
-| 68 | POST | `/models/provider` | 新增模型供应器 | 超级管理员 | 1天 |
-| 69 | PUT | `/models/provider` | 修改模型供应器 | 超级管理员 | 1天 |
-| 70 | POST | `/models/provider/delete` | 删除模型供应器 | 超级管理员 | 0.5天 |
-| 71 | GET | `/models/provider/plugin/names` | 获取插件名称列表 | 公开 | 0.5天 |
+| 67 | GET | `/models/provider` | 获取模型供应器列表 | 超级管理员 | 0.5天 | ✅ 已实现 |
+| 68 | POST | `/models/provider` | 新增模型供应器 | 超级管理员 | 1天 | ✅ 已实现 |
+| 69 | PUT | `/models/provider` | 修改模型供应器 | 超级管理员 | 1天 | ✅ 已实现 |
+| 70 | POST | `/models/provider/delete` | 删除模型供应器 | 超级管理员 | 0.5天 | ✅ 已实现 |
+| 71 | GET | `/models/provider/plugin/names` | 获取插件名称列表 | 公开 | 0.5天 | ✅ 已实现（有TODO，基本功能已实现） |
 
 **音色管理**:
-| 72 | GET | `/ttsVoice` | 分页查找音色 | 超级管理员 | 0.5天 |
-| 73 | POST | `/ttsVoice` | 保存音色 | 超级管理员 | 0.5天 |
-| 74 | PUT | `/ttsVoice/{id}` | 修改音色 | 超级管理员 | 0.5天 |
-| 75 | POST | `/ttsVoice/delete` | 删除音色 | 超级管理员 | 0.5天 |
+| 72 | GET | `/ttsVoice` | 分页查找音色 | 超级管理员 | 0.5天 | ✅ 已实现 |
+| 73 | POST | `/ttsVoice` | 保存音色 | 超级管理员 | 0.5天 | ✅ 已实现 |
+| 74 | PUT | `/ttsVoice/{id}` | 修改音色 | 超级管理员 | 0.5天 | ✅ 已实现 |
+| 75 | POST | `/ttsVoice/delete` | 删除音色 | 超级管理员 | 0.5天 | ✅ 已实现 |
 
 **Phase 5 总计**: 约 12 天（2.5周）
 

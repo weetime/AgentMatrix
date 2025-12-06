@@ -1,0 +1,345 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
+
+import "protos/v1/agentmatrix.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/struct.proto";
+import "validate/validate.proto";
+
+// ModelBasicInfoDTO 模型基础信息DTO
+message ModelBasicInfoDTO {
+  string id = 1;
+  string model_name = 2;
+}
+
+// LlmModelBasicInfoDTO LLM模型基础信息DTO
+message LlmModelBasicInfoDTO {
+  string id = 1;
+  string model_name = 2;
+  string type = 3;
+}
+
+// ModelConfigDTO 模型配置DTO
+message ModelConfigDTO {
+  string id = 1;
+  string model_type = 2;
+  string model_code = 3;
+  string model_name = 4;
+  int32 is_default = 5;  // 0否 1是
+  int32 is_enabled = 6;  // 0否 1是
+  google.protobuf.Struct config_json = 7;
+  string doc_link = 8;
+  string remark = 9;
+  int32 sort = 10;
+}
+
+// ModelProviderDTO 模型供应器DTO
+message ModelProviderDTO {
+  string id = 1;
+  string model_type = 2;
+  string provider_code = 3;
+  string name = 4;
+  string fields = 5;  // JSON字符串
+  int32 sort = 6;
+  string updater = 7;  // 格式化为字符串
+  string update_date = 8;  // ISO 8601格式
+  string creator = 9;  // 格式化为字符串
+  string create_date = 10;  // ISO 8601格式
+}
+
+// ModelConfigBodyDTO 模型配置请求体DTO
+message ModelConfigBodyDTO {
+  string id = 1;  // 可选，新增时自动生成
+  string model_code = 2;
+  string model_name = 3;
+  int32 is_default = 4;
+  int32 is_enabled = 5;
+  google.protobuf.Struct config_json = 6;
+  string doc_link = 7;
+  string remark = 8;
+  int32 sort = 9;
+}
+
+// VoiceDTO 音色DTO
+message VoiceDTO {
+  string id = 1;
+  string name = 2;
+  string voice_demo = 3;  // 可选
+}
+
+// GetModelNamesRequest 获取所有模型名称请求
+message GetModelNamesRequest {
+  string model_type = 1 [(validate.rules).string.min_len = 1];
+  google.protobuf.StringValue model_name = 2;  // 可选，模糊查询
+}
+
+// GetLlmModelNamesRequest 获取LLM模型信息请求
+message GetLlmModelNamesRequest {
+  google.protobuf.StringValue model_name = 1;  // 可选，模糊查询
+}
+
+// GetModelProviderListRequest 获取模型供应器列表请求
+message GetModelProviderListRequest {
+  string model_type = 1 [(validate.rules).string.min_len = 1];
+}
+
+// PageModelConfigRequest 获取模型配置列表请求
+message PageModelConfigRequest {
+  string model_type = 1 [(validate.rules).string.min_len = 1];
+  google.protobuf.StringValue model_name = 2;  // 可选，模糊查询
+  int64 page = 3;  // 页码，从0开始
+  int64 limit = 4;  // 每页数量，默认10
+}
+
+// AddModelConfigRequest 新增模型配置请求
+message AddModelConfigRequest {
+  string model_type = 1 [(validate.rules).string.min_len = 1];
+  string provide_code = 2 [(validate.rules).string.min_len = 1];
+  ModelConfigBodyDTO body = 3;
+}
+
+// EditModelConfigRequest 编辑模型配置请求
+message EditModelConfigRequest {
+  string model_type = 1 [(validate.rules).string.min_len = 1];
+  string provide_code = 2 [(validate.rules).string.min_len = 1];
+  string id = 3 [(validate.rules).string.min_len = 1];
+  ModelConfigBodyDTO body = 4;
+}
+
+// DeleteModelConfigRequest 删除模型配置请求
+message DeleteModelConfigRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];
+}
+
+// GetModelConfigRequest 获取模型配置请求
+message GetModelConfigRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];
+}
+
+// EnableModelConfigRequest 启用/关闭模型请求
+message EnableModelConfigRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];
+  int32 status = 2 [(validate.rules).int32 = {in: [0, 1]}];  // 0或1
+}
+
+// SetDefaultModelRequest 设置默认模型请求
+message SetDefaultModelRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];
+}
+
+// GetModelVoicesRequest 获取模型音色请求
+message GetModelVoicesRequest {
+  string model_id = 1 [(validate.rules).string.min_len = 1];
+  google.protobuf.StringValue voice_name = 2;  // 可选，模糊查询
+}
+
+// PageModelProviderRequest 获取模型供应器列表请求
+message PageModelProviderRequest {
+  google.protobuf.StringValue model_type = 1;  // 可选，模型类型过滤
+  google.protobuf.StringValue name = 2;  // 可选，名称或providerCode模糊查询
+  int64 page = 3;  // 页码，从0开始
+  int64 limit = 4;  // 每页数量，默认10
+}
+
+// AddModelProviderRequest 新增模型供应器请求
+message AddModelProviderRequest {
+  string model_type = 1 [(validate.rules).string.min_len = 1];
+  string provider_code = 2 [(validate.rules).string.min_len = 1];
+  string name = 3 [(validate.rules).string.min_len = 1];
+  string fields = 4 [(validate.rules).string.min_len = 1];  // JSON字符串
+  int32 sort = 5;
+}
+
+// EditModelProviderRequest 修改模型供应器请求
+message EditModelProviderRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];
+  string model_type = 2 [(validate.rules).string.min_len = 1];
+  string provider_code = 3 [(validate.rules).string.min_len = 1];
+  string name = 4 [(validate.rules).string.min_len = 1];
+  string fields = 5 [(validate.rules).string.min_len = 1];  // JSON字符串
+  int32 sort = 6;
+}
+
+// DeleteModelProviderRequest 删除模型供应器请求
+message DeleteModelProviderRequest {
+  repeated string ids = 1;  // ID数组
+}
+
+// GetPluginNamesRequest 获取插件名称列表请求（空请求）
+message GetPluginNamesRequest {
+}
+
+// ModelService 模型配置管理服务
+service ModelService {
+  // GetModelNames 获取所有模型名称
+  rpc GetModelNames(GetModelNamesRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/names"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取所有模型名称";
+    };
+  }
+
+  // GetLlmModelNames 获取LLM模型信息
+  rpc GetLlmModelNames(GetLlmModelNamesRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/llm/names"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取LLM模型信息";
+    };
+  }
+
+  // GetModelProviderList 获取模型供应器列表
+  rpc GetModelProviderList(GetModelProviderListRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/{model_type}/provideTypes"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取模型供应器列表";
+    };
+  }
+
+  // PageModelConfig 获取模型配置列表
+  rpc PageModelConfig(PageModelConfigRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/list"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取模型配置列表";
+    };
+  }
+
+  // AddModelConfig 新增模型配置
+  rpc AddModelConfig(AddModelConfigRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/models/{model_type}/{provide_code}"
+      body: "body"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "新增模型配置";
+    };
+  }
+
+  // EditModelConfig 编辑模型配置
+  rpc EditModelConfig(EditModelConfigRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/models/{model_type}/{provide_code}/{id}"
+      body: "body"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "编辑模型配置";
+    };
+  }
+
+  // DeleteModelConfig 删除模型配置
+  rpc DeleteModelConfig(DeleteModelConfigRequest) returns (Response) {
+    option (google.api.http) = {
+      delete: "/models/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除模型配置";
+    };
+  }
+
+  // GetModelConfig 获取模型配置
+  rpc GetModelConfig(GetModelConfigRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取模型配置";
+    };
+  }
+
+  // EnableModelConfig 启用/关闭模型
+  rpc EnableModelConfig(EnableModelConfigRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/models/enable/{id}/{status}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "启用/关闭模型配置";
+    };
+  }
+
+  // SetDefaultModel 设置默认模型
+  rpc SetDefaultModel(SetDefaultModelRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/models/default/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "设置默认模型";
+    };
+  }
+
+  // GetModelVoices 获取模型音色
+  rpc GetModelVoices(GetModelVoicesRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/{model_id}/voices"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取模型音色";
+    };
+  }
+
+  // PageModelProvider 获取模型供应器列表
+  rpc PageModelProvider(PageModelProviderRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/provider"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取模型供应器列表";
+    };
+  }
+
+  // AddModelProvider 新增模型供应器
+  rpc AddModelProvider(AddModelProviderRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/models/provider"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "新增模型供应器";
+    };
+  }
+
+  // EditModelProvider 修改模型供应器
+  rpc EditModelProvider(EditModelProviderRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/models/provider"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "修改模型供应器";
+    };
+  }
+
+  // DeleteModelProvider 删除模型供应器
+  rpc DeleteModelProvider(DeleteModelProviderRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/models/provider/delete"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除模型供应器";
+    };
+  }
+
+  // GetPluginNames 获取插件名称列表
+  rpc GetPluginNames(GetPluginNamesRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/provider/plugin/names"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取插件名称列表";
+    };
+  }
+}

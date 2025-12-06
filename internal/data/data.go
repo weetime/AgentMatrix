@@ -28,6 +28,9 @@ var ProviderSet = wire.NewSet(
 	NewDictTypeRepo,
 	NewDictDataRepo,
 	NewDeviceRepo,
+	NewModelConfigRepo,
+	NewModelProviderRepo,
+	NewTtsVoiceRepo,
 	kit.NewRedisClient,
 )
 
