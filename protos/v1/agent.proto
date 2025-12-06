@@ -167,6 +167,17 @@ message PlayAudioRequest {
 
 // AgentService 智能体管理服务
 service AgentService {
+
+    // GetAgentTemplates 获取智能体模板列表
+    rpc GetAgentTemplates(Empty) returns (Response) {
+      option (google.api.http) = {
+        get: "/agent/template"
+      };
+      option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+        summary: "获取智能体模板列表";
+      };
+    }
+
   // ListUserAgents 获取用户智能体列表
   rpc ListUserAgents(Empty) returns (Response) {
     option (google.api.http) = {
@@ -237,16 +248,6 @@ service AgentService {
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "删除智能体（级联删除）";
-    };
-  }
-
-  // GetAgentTemplates 获取智能体模板列表
-  rpc GetAgentTemplates(Empty) returns (Response) {
-    option (google.api.http) = {
-      get: "/agent/template"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "获取智能体模板列表";
     };
   }
 
