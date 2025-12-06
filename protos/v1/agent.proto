@@ -239,8 +239,75 @@ message PlayAudioRequest {
   string uuid = 1 [(validate.rules).string.min_len = 1]; // UUID
 }
 
+// AgentVoicePrintVO 智能体声纹VO
+message AgentVoicePrintVO {
+  string id = 1;                    // 声纹ID
+  string audio_id = 2;              // 音频文件ID
+  string source_name = 3;           // 声纹来源的人姓名
+  string introduce = 4;             // 描述声纹来源的人
+  string create_date = 5;           // 创建时间
+}
+
+// AgentVoicePrintSaveRequest 创建智能体声纹请求
+message AgentVoicePrintSaveRequest {
+  string agent_id = 1 [(validate.rules).string.min_len = 1]; // 智能体ID（必填）
+  string audio_id = 2 [(validate.rules).string.min_len = 1]; // 音频文件ID（必填）
+  string source_name = 3 [(validate.rules).string.min_len = 1]; // 声纹来源的人姓名（必填）
+  google.protobuf.StringValue introduce = 4; // 描述声纹来源的人（可选）
+}
+
+// AgentVoicePrintUpdateRequest 更新智能体声纹请求
+message AgentVoicePrintUpdateRequest {
+  string id = 1 [(validate.rules).string.min_len = 1]; // 声纹ID（必填）
+  google.protobuf.StringValue audio_id = 2; // 音频文件ID（可选）
+  google.protobuf.StringValue source_name = 3; // 声纹来源的人姓名（可选）
+  google.protobuf.StringValue introduce = 4; // 描述声纹来源的人（可选）
+}
+
 // AgentService 智能体管理服务
 service AgentService {
+
+    // CreateAgentVoicePrint 创建智能体声纹
+    rpc CreateAgentVoicePrint(AgentVoicePrintSaveRequest) returns (Response) {
+      option (google.api.http) = {
+        post: "/agent/voice-print"
+        body: "*"
+      };
+      option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+        summary: "创建智能体声纹";
+      };
+    }
+
+    // UpdateAgentVoicePrint 更新智能体声纹
+    rpc UpdateAgentVoicePrint(AgentVoicePrintUpdateRequest) returns (Response) {
+      option (google.api.http) = {
+        put: "/agent/voice-print"
+        body: "*"
+      };
+      option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+        summary: "更新智能体声纹";
+      };
+    }
+
+    // DeleteAgentVoicePrint 删除智能体声纹
+    rpc DeleteAgentVoicePrint(GetAgentByIdRequest) returns (Response) {
+      option (google.api.http) = {
+        delete: "/agent/voice-print/{id}"
+      };
+      option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+        summary: "删除智能体声纹";
+      };
+    }
+
+    // ListAgentVoicePrints 获取智能体声纹列表
+    rpc ListAgentVoicePrints(GetAgentByIdRequest) returns (Response) {
+      option (google.api.http) = {
+        get: "/agent/voice-print/list/{id}"
+      };
+      option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+        summary: "获取智能体声纹列表";
+      };
+    }
 
     // GetAgentTemplatePage 分页查询模板
     rpc GetAgentTemplatePage(AgentTemplatePageRequest) returns (Response) {
@@ -448,6 +515,26 @@ service AgentService {
       summary: "播放音频";
     };
   }
+
+  // GetAgentMcpAddress 获取智能体的MCP接入点地址
+  rpc GetAgentMcpAddress(GetAgentMcpAddressRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/agent/mcp/address/{agent_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取智能体的MCP接入点地址";
+    };
+  }
+
+  // GetAgentMcpTools 获取智能体的MCP工具列表
+  rpc GetAgentMcpTools(GetAgentMcpToolsRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/agent/mcp/tools/{agent_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取智能体的MCP工具列表";
+    };
+  }
 }
 
 // GetAgentByIdRequest 获取智能体详情请求
@@ -459,5 +546,15 @@ message GetAgentByIdRequest {
 message UpdateAgentMemoryByMacAddressRequest {
   string mac_address = 1 [(validate.rules).string.min_len = 1]; // MAC地址
   string summary_memory = 2; // 总结记忆
+}
+
+// GetAgentMcpAddressRequest 获取MCP接入点地址请求
+message GetAgentMcpAddressRequest {
+  string agent_id = 1 [(validate.rules).string.min_len = 1]; // 智能体ID
+}
+
+// GetAgentMcpToolsRequest 获取MCP工具列表请求
+message GetAgentMcpToolsRequest {
+  string agent_id = 1 [(validate.rules).string.min_len = 1]; // 智能体ID
 }
 

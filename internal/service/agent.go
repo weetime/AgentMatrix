@@ -14,15 +14,17 @@ import (
 )
 
 type AgentService struct {
-	uc      *biz.AgentUsecase
-	modelUc *biz.ModelUsecase
+	uc           *biz.AgentUsecase
+	modelUc      *biz.ModelUsecase
+	voicePrintUc *biz.AgentVoicePrintUsecase
 	pb.UnimplementedAgentServiceServer
 }
 
-func NewAgentService(uc *biz.AgentUsecase, modelUc *biz.ModelUsecase) *AgentService {
+func NewAgentService(uc *biz.AgentUsecase, modelUc *biz.ModelUsecase, voicePrintUc *biz.AgentVoicePrintUsecase) *AgentService {
 	return &AgentService{
-		uc:      uc,
-		modelUc: modelUc,
+		uc:           uc,
+		modelUc:      modelUc,
+		voicePrintUc: voicePrintUc,
 	}
 }
 
@@ -1056,5 +1058,294 @@ func (s *AgentService) PlayAudio(ctx context.Context, req *pb.PlayAudioRequest) 
 		Code: 0,
 		Msg:  "success",
 		Data: dataStruct,
+	}, nil
+}
+
+// CreateAgentVoicePrint 创建智能体声纹
+func (s *AgentService) CreateAgentVoicePrint(ctx context.Context, req *pb.AgentVoicePrintSaveRequest) (*pb.Response, error) {
+	// 从 context 获取用户ID
+	userId, err := middleware.GetUserIdFromContext(ctx)
+	if err != nil {
+		return &pb.Response{
+			Code: 401,
+			Msg:  "未授权，请先登录",
+		}, nil
+	}
+
+	var introduce *string
+	if req.Introduce != nil && req.Introduce.GetValue() != "" {
+		val := req.Introduce.GetValue()
+		introduce = &val
+	}
+
+	err = s.voicePrintUc.CreateAgentVoicePrint(ctx, req.GetAgentId(), req.GetAudioId(), req.GetSourceName(), introduce, userId)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+	}, nil
+}
+
+// UpdateAgentVoicePrint 更新智能体声纹
+func (s *AgentService) UpdateAgentVoicePrint(ctx context.Context, req *pb.AgentVoicePrintUpdateRequest) (*pb.Response, error) {
+	// 从 context 获取用户ID
+	userId, err := middleware.GetUserIdFromContext(ctx)
+	if err != nil {
+		return &pb.Response{
+			Code: 401,
+			Msg:  "未授权，请先登录",
+		}, nil
+	}
+
+	var audioId *string
+	if req.AudioId != nil && req.AudioId.GetValue() != "" {
+		val := req.AudioId.GetValue()
+		audioId = &val
+	}
+
+	var sourceName *string
+	if req.SourceName != nil && req.SourceName.GetValue() != "" {
+		val := req.SourceName.GetValue()
+		sourceName = &val
+	}
+
+	var introduce *string
+	if req.Introduce != nil && req.Introduce.GetValue() != "" {
+		val := req.Introduce.GetValue()
+		introduce = &val
+	}
+
+	err = s.voicePrintUc.UpdateAgentVoicePrint(ctx, req.GetId(), audioId, sourceName, introduce, userId)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+	}, nil
+}
+
+// DeleteAgentVoicePrint 删除智能体声纹
+func (s *AgentService) DeleteAgentVoicePrint(ctx context.Context, req *pb.GetAgentByIdRequest) (*pb.Response, error) {
+	// 从 context 获取用户ID
+	userId, err := middleware.GetUserIdFromContext(ctx)
+	if err != nil {
+		return &pb.Response{
+			Code: 401,
+			Msg:  "未授权，请先登录",
+		}, nil
+	}
+
+	err = s.voicePrintUc.DeleteAgentVoicePrint(ctx, req.GetId(), userId)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+	}, nil
+}
+
+// ListAgentVoicePrints 获取智能体声纹列表
+func (s *AgentService) ListAgentVoicePrints(ctx context.Context, req *pb.GetAgentByIdRequest) (*pb.Response, error) {
+	// 从 context 获取用户ID
+	userId, err := middleware.GetUserIdFromContext(ctx)
+	if err != nil {
+		return &pb.Response{
+			Code: 401,
+			Msg:  "未授权，请先登录",
+		}, nil
+	}
+
+	voList, err := s.voicePrintUc.ListAgentVoicePrints(ctx, req.GetId(), userId)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 转换为VO列表
+	dtoList := make([]interface{}, 0, len(voList))
+	for _, vp := range voList {
+		createDateStr := ""
+		if !vp.CreateDate.IsZero() {
+			createDateStr = vp.CreateDate.Format(time.RFC3339)
+		}
+		dtoList = append(dtoList, map[string]interface{}{
+			"id":         vp.ID,
+			"audioId":    vp.AudioID,
+			"sourceName": vp.SourceName,
+			"introduce":  vp.Introduce,
+			"createDate": createDateStr,
+		})
+	}
+
+	data := map[string]interface{}{
+		"list": dtoList,
+	}
+
+	dataStruct, err := structpb.NewStruct(data)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  "构建响应数据失败: " + err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+		Data: dataStruct,
+	}, nil
+}
+
+// GetAgentMcpAddress 获取智能体的MCP接入点地址
+func (s *AgentService) GetAgentMcpAddress(ctx context.Context, req *pb.GetAgentMcpAddressRequest) (*pb.Response, error) {
+	// 从 context 获取用户ID
+	userId, err := middleware.GetUserIdFromContext(ctx)
+	if err != nil {
+		return &pb.Response{
+			Code: 401,
+			Msg:  "未授权，请先登录",
+		}, nil
+	}
+
+	// 获取用户详情（检查是否为超级管理员）
+	userDetail, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		return &pb.Response{
+			Code: 401,
+			Msg:  "未授权，请先登录",
+		}, nil
+	}
+	isSuperAdmin := userDetail != nil && userDetail.SuperAdmin == 1
+
+	// 检查权限
+	hasPermission, err := s.uc.CheckAgentPermission(ctx, req.GetAgentId(), userId, isSuperAdmin)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+	if !hasPermission {
+		return &pb.Response{
+			Code: 403,
+			Msg:  "没有权限查看该智能体的MCP接入点地址",
+		}, nil
+	}
+
+	// 获取MCP接入点地址
+	agentMcpAccessAddress, err := s.uc.GetAgentMcpAccessAddress(ctx, req.GetAgentId())
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 如果地址为空，返回提示信息
+	if agentMcpAccessAddress == "" {
+		agentMcpAccessAddress = "请联系管理员进入参数管理配置mcp接入点地址"
+	}
+
+	// 将字符串转换为 structpb.Value，直接作为 data 字段的值
+	dataValue, err := structpb.NewValue(agentMcpAccessAddress)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  "构建响应数据失败: " + err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+		Data: &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"data": dataValue,
+			},
+		},
+	}, nil
+}
+
+// GetAgentMcpTools 获取智能体的MCP工具列表
+func (s *AgentService) GetAgentMcpTools(ctx context.Context, req *pb.GetAgentMcpToolsRequest) (*pb.Response, error) {
+	// 从 context 获取用户ID
+	userId, err := middleware.GetUserIdFromContext(ctx)
+	if err != nil {
+		return &pb.Response{
+			Code: 401,
+			Msg:  "未授权，请先登录",
+		}, nil
+	}
+
+	// 获取用户详情（检查是否为超级管理员）
+	userDetail, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		return &pb.Response{
+			Code: 401,
+			Msg:  "未授权，请先登录",
+		}, nil
+	}
+	isSuperAdmin := userDetail != nil && userDetail.SuperAdmin == 1
+
+	// 检查权限
+	hasPermission, err := s.uc.CheckAgentPermission(ctx, req.GetAgentId(), userId, isSuperAdmin)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+	if !hasPermission {
+		return &pb.Response{
+			Code: 403,
+			Msg:  "没有权限查看该智能体的MCP工具列表",
+		}, nil
+	}
+
+	// 获取MCP工具列表
+	agentMcpToolsList, err := s.uc.GetAgentMcpToolsList(ctx, req.GetAgentId())
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 返回工具列表
+	// 将数组转换为 structpb.Value，直接作为 data 字段的值
+	dataValue, err := structpb.NewValue(agentMcpToolsList)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  "构建响应数据失败: " + err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+		Data: &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"data": dataValue,
+			},
+		},
 	}, nil
 }

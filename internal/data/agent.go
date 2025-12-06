@@ -795,6 +795,20 @@ func (r *agentRepo) GetDefaultAgentByMacAddress(ctx context.Context, macAddress 
 	return nil, fmt.Errorf("not implemented: need Device schema")
 }
 
+// IsAudioOwnedByAgent 检查音频是否属于指定智能体
+func (r *agentRepo) IsAudioOwnedByAgent(ctx context.Context, audioId, agentId string) (bool, error) {
+	count, err := r.data.db.AgentChatHistory.Query().
+		Where(
+			agentchathistory.AudioIDEQ(audioId),
+			agentchathistory.AgentIDEQ(agentId),
+		).
+		Count(ctx)
+	if err != nil {
+		return false, err
+	}
+	return count == 1, nil
+}
+
 // getProviderCode 通过 ent 查询 provider_code
 func (r *agentRepo) getProviderCode(ctx context.Context, pluginID string) string {
 	// 使用 ent 查询 provider_code

@@ -204,12 +204,12 @@
 | 39 | GET | `/agent/play/{uuid}` | 播放音频 | 公开 | 0.5天 | ✅ 已完成 |
 
 **智能体模板管理**:
-| 40 | GET | `/agent/template/page` | 分页查询模板 | 超级管理员 | 0.5天 | ❌ 未开始 |
-| 41 | GET | `/agent/template/{id}` | 获取模板详情 | 超级管理员 | 0.5天 | ❌ 未开始 |
-| 42 | POST | `/agent/template` | 创建模板 | 超级管理员 | 0.5天 | ❌ 未开始 |
-| 43 | PUT | `/agent/template` | 更新模板 | 超级管理员 | 0.5天 | ❌ 未开始 |
-| 44 | DELETE | `/agent/template/{id}` | 删除模板 | 超级管理员 | 0.5天 | ❌ 未开始 |
-| 45 | POST | `/agent/template/batch-remove` | 批量删除模板 | 超级管理员 | 0.5天 | ❌ 未开始 |
+| 40 | GET | `/agent/template/page` | 分页查询模板 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 41 | GET | `/agent/template/{id}` | 获取模板详情 | 超级管理员 | 0.5天 | ✅ 已完成|
+| 42 | POST | `/agent/template` | 创建模板 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 43 | PUT | `/agent/template` | 更新模板 | 超级管理员 | 0.5天 | ✅ 已完成|
+| 44 | DELETE | `/agent/template/{id}` | 删除模板 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 45 | POST | `/agent/template/batch-remove` | 批量删除模板 | 超级管理员 | 0.5天 | ✅ 已完成 |
 
 **聊天历史管理**:
 | 46 | POST | `/agent/chat-history/report` | 小智服务聊天上报 | 公开 | 1天 | ❌ 未开始 |
@@ -218,10 +218,10 @@
 | 49 | GET | `/agent/chat-history/download/{uuid}/previous` | 下载当前及前20条会话 | 公开 | 0.5天 | ❌ 未开始 |
 
 **声纹管理**:
-| 50 | POST | `/agent/voice-print` | 创建智能体声纹 | 普通用户 | 1天 | ❌ 未开始 |
-| 51 | PUT | `/agent/voice-print` | 更新智能体声纹 | 普通用户 | 0.5天 | ❌ 未开始 |
-| 52 | DELETE | `/agent/voice-print/{id}` | 删除智能体声纹 | 普通用户 | 0.5天 | ❌ 未开始 |
-| 53 | GET | `/agent/voice-print/list/{id}` | 获取智能体声纹列表 | 普通用户 | 0.5天 | ❌ 未开始 |
+| 50 | POST | `/agent/voice-print` | 创建智能体声纹 | 普通用户 | 1天 | ✅ 已完成 |
+| 51 | PUT | `/agent/voice-print` | 更新智能体声纹 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 52 | DELETE | `/agent/voice-print/{id}` | 删除智能体声纹 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 53 | GET | `/agent/voice-print/list/{id}` | 获取智能体声纹列表 | 普通用户 | 0.5天 | ✅ 已完成 |
 
 **MCP 接入点管理**:
 | 54 | GET | `/agent/mcp/address/{agentId}` | 获取 MCP 接入点地址 | 普通用户 | 0.5天 | ❌ 未开始 |

@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -165,27 +166,31 @@ type AgentRepo interface {
 	DeleteAudioByAgentID(ctx context.Context, agentId string) error
 	GetDeviceCountByAgentID(ctx context.Context, agentId string) (int, error)
 	GetDefaultAgentByMacAddress(ctx context.Context, macAddress string) (*Agent, error)
+	IsAudioOwnedByAgent(ctx context.Context, audioId, agentId string) (bool, error)
 }
 
 // AgentUsecase 智能体业务逻辑
 type AgentUsecase struct {
-	repo        AgentRepo
-	redisClient *kit.RedisClient
-	handleError *cerrors.HandleError
-	log         *log.Helper
+	repo          AgentRepo
+	configUsecase *ConfigUsecase
+	redisClient   *kit.RedisClient
+	handleError   *cerrors.HandleError
+	log           *log.Helper
 }
 
 // NewAgentUsecase 创建智能体用例
 func NewAgentUsecase(
 	repo AgentRepo,
+	configUsecase *ConfigUsecase,
 	redisClient *kit.RedisClient,
 	logger log.Logger,
 ) *AgentUsecase {
 	return &AgentUsecase{
-		repo:        repo,
-		redisClient: redisClient,
-		handleError: cerrors.NewHandleError(logger),
-		log:         kit.LogHelper(logger),
+		repo:          repo,
+		configUsecase: configUsecase,
+		redisClient:   redisClient,
+		handleError:   cerrors.NewHandleError(logger),
+		log:           kit.LogHelper(logger),
 	}
 }
 
@@ -511,4 +516,244 @@ func (uc *AgentUsecase) CheckAgentPermission(ctx context.Context, agentId string
 	}
 
 	return agent.UserID == userId, nil
+}
+
+// GetAgentMcpAccessAddress 获取智能体的MCP接入点地址
+func (uc *AgentUsecase) GetAgentMcpAccessAddress(ctx context.Context, agentId string) (string, error) {
+	// 获取MCP地址配置
+	mcpUrl, err := uc.configUsecase.GetValue(ctx, "server.mcp_endpoint", true)
+	if err != nil {
+		return "", fmt.Errorf("获取MCP配置失败: %w", err)
+	}
+
+	if mcpUrl == "" || mcpUrl == "null" {
+		return "", nil
+	}
+
+	// 解析URI
+	parsedURL, err := parseURI(mcpUrl)
+	if err != nil {
+		return "", fmt.Errorf("mcp的地址存在错误，请进入参数管理修改mcp接入点地址: %w", err)
+	}
+
+	// 获取智能体mcp的url前缀
+	agentMcpUrl := uc.getAgentMcpUrl(parsedURL)
+
+	// 获取密钥
+	key := uc.getSecretKey(parsedURL)
+
+	// 获取加密的token
+	encryptToken, err := uc.encryptToken(agentId, key)
+	if err != nil {
+		return "", fmt.Errorf("加密token失败: %w", err)
+	}
+
+	// 对token进行URL编码
+	encodedToken := url.QueryEscape(encryptToken)
+
+	// 返回智能体Mcp路径的格式
+	agentMcpUrl = fmt.Sprintf("%s/mcp/?token=%s", agentMcpUrl, encodedToken)
+	return agentMcpUrl, nil
+}
+
+// GetAgentMcpToolsList 获取智能体的MCP工具列表
+func (uc *AgentUsecase) GetAgentMcpToolsList(ctx context.Context, agentId string) ([]string, error) {
+	// 获取MCP地址
+	wsUrl, err := uc.GetAgentMcpAccessAddress(ctx, agentId)
+	if err != nil {
+		return nil, err
+	}
+
+	if wsUrl == "" {
+		return []string{}, nil
+	}
+
+	// 将 /mcp 替换为 /call
+	wsUrl = strings.Replace(wsUrl, "/mcp/", "/call/", 1)
+
+	// 创建WebSocket客户端
+	client := kit.NewWebSocketClient(&kit.WebSocketClientConfig{
+		URL:            wsUrl,
+		ConnectTimeout: 8 * time.Second,
+		MaxDuration:    10 * time.Second,
+		BufferSize:     1024 * 1024,
+		Logger:         uc.log,
+	})
+
+	// 确保连接关闭
+	defer client.Close()
+
+	// 连接
+	if err := client.Connect(); err != nil {
+		uc.log.Warnf("WebSocket连接失败，智能体ID: %s, 错误: %v", agentId, err)
+		return []string{}, nil
+	}
+
+	// 步骤1: 发送初始化消息并等待响应
+	uc.log.Infof("发送MCP初始化消息，智能体ID: %s", agentId)
+	if err := client.SendText(kit.GetInitializeJson()); err != nil {
+		uc.log.Warnf("发送初始化消息失败: %v", err)
+		return []string{}, nil
+	}
+
+	// 等待初始化响应 (id=1)
+	initResponses := client.ListenForResponseWithoutClose(func(response string) bool {
+		jsonMap, err := kit.ParseJsonResponse(response)
+		if err != nil {
+			return false
+		}
+		if id, ok := jsonMap["id"].(float64); ok && int(id) == 1 {
+			// 检查是否有result字段，表示初始化成功
+			_, hasResult := jsonMap["result"]
+			_, hasError := jsonMap["error"]
+			return hasResult && !hasError
+		}
+		return false
+	})
+
+	// 验证初始化响应
+	initSucceeded := false
+	for _, response := range initResponses {
+		jsonMap, err := kit.ParseJsonResponse(response)
+		if err != nil {
+			continue
+		}
+		if id, ok := jsonMap["id"].(float64); ok && int(id) == 1 {
+			if _, hasResult := jsonMap["result"]; hasResult {
+				uc.log.Infof("MCP初始化成功，智能体ID: %s", agentId)
+				initSucceeded = true
+				break
+			} else if _, hasError := jsonMap["error"]; hasError {
+				uc.log.Errorf("MCP初始化失败，智能体ID: %s, 错误: %v", agentId, jsonMap["error"])
+				return []string{}, nil
+			}
+		}
+	}
+
+	if !initSucceeded {
+		uc.log.Errorf("未收到有效的MCP初始化响应，智能体ID: %s", agentId)
+		return []string{}, nil
+	}
+
+	// 步骤2: 发送初始化完成通知
+	uc.log.Infof("发送MCP初始化完成通知，智能体ID: %s", agentId)
+	if err := client.SendText(kit.GetNotificationsInitializedJson()); err != nil {
+		uc.log.Warnf("发送初始化完成通知失败: %v", err)
+		return []string{}, nil
+	}
+
+	// 步骤3: 发送工具列表请求
+	uc.log.Infof("发送MCP工具列表请求，智能体ID: %s", agentId)
+	if err := client.SendText(kit.GetToolsListJson()); err != nil {
+		uc.log.Warnf("发送工具列表请求失败: %v", err)
+		return []string{}, nil
+	}
+
+	// 等待工具列表响应 (id=2)
+	toolsResponses, err := client.ListenForResponse(func(response string) bool {
+		jsonMap, err := kit.ParseJsonResponse(response)
+		if err != nil {
+			return false
+		}
+		if id, ok := jsonMap["id"].(float64); ok && int(id) == 2 {
+			return true
+		}
+		return false
+	})
+
+	if err != nil {
+		uc.log.Warnf("等待工具列表响应失败: %v", err)
+		return []string{}, nil
+	}
+
+	// 处理工具列表响应
+	for _, response := range toolsResponses {
+		jsonMap, err := kit.ParseJsonResponse(response)
+		if err != nil {
+			continue
+		}
+		if id, ok := jsonMap["id"].(float64); ok && int(id) == 2 {
+			// 检查是否有result字段
+			if resultObj, hasResult := jsonMap["result"]; hasResult {
+				if resultMap, ok := resultObj.(map[string]interface{}); ok {
+					if toolsObj, hasTools := resultMap["tools"]; hasTools {
+						if toolsList, ok := toolsObj.([]interface{}); ok {
+							// 提取工具名称列表
+							var result []string
+							for _, tool := range toolsList {
+								if toolMap, ok := tool.(map[string]interface{}); ok {
+									if name, ok := toolMap["name"].(string); ok && name != "" {
+										result = append(result, name)
+									}
+								}
+							}
+							uc.log.Infof("成功获取MCP工具列表，智能体ID: %s, 工具数量: %d", agentId, len(result))
+							return result, nil
+						}
+					}
+				}
+			} else if _, hasError := jsonMap["error"]; hasError {
+				uc.log.Errorf("获取工具列表失败，智能体ID: %s, 错误: %v", agentId, jsonMap["error"])
+				return []string{}, nil
+			}
+		}
+	}
+
+	uc.log.Warnf("未找到有效的工具列表响应，智能体ID: %s", agentId)
+	return []string{}, nil
+}
+
+// parseURI 解析URI
+func parseURI(urlStr string) (*url.URL, error) {
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, fmt.Errorf("路径格式不正确路径：%s，错误信息: %v", urlStr, err)
+	}
+	return parsedURL, nil
+}
+
+// getSecretKey 获取密钥
+func (uc *AgentUsecase) getSecretKey(parsedURL *url.URL) string {
+	query := parsedURL.RawQuery
+	keyPrefix := "key="
+	keyIndex := strings.Index(query, keyPrefix)
+	if keyIndex == -1 {
+		return ""
+	}
+	return query[keyIndex+len(keyPrefix):]
+}
+
+// getAgentMcpUrl 获取智能体mcp接入点url
+func (uc *AgentUsecase) getAgentMcpUrl(parsedURL *url.URL) string {
+	// 获取协议
+	var wsScheme string
+	if parsedURL.Scheme == "https" {
+		wsScheme = "wss"
+	} else {
+		wsScheme = "ws"
+	}
+
+	// 获取主机和路径
+	host := parsedURL.Host
+	path := parsedURL.Path
+
+	// 获取到最后一个/前的path
+	lastSlashIndex := strings.LastIndex(path, "/")
+	if lastSlashIndex != -1 {
+		path = path[:lastSlashIndex]
+	}
+
+	return fmt.Sprintf("%s://%s%s", wsScheme, host, path)
+}
+
+// encryptToken 获取对智能体id加密的token
+func (uc *AgentUsecase) encryptToken(agentId, key string) (string, error) {
+	// 使用md5对智能体id进行加密
+	md5 := kit.MD5HexDigest(agentId)
+
+	// aes需要加密文本
+	json := fmt.Sprintf(`{"agentId": "%s"}`, md5)
+
+	// 加密后成token值
+	return kit.AESEncrypt(key, json)
 }

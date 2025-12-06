@@ -26,6 +26,9 @@ func (AgentVoicePrint) Fields() []ent.Field {
 		field.String("agent_id").
 			MaxLen(32).
 			Comment("关联的智能体ID"),
+		field.String("audio_id").
+			MaxLen(32).
+			Comment("关联的音频ID"),
 		field.String("source_name").
 			MaxLen(50).
 			Comment("声纹来源的人的姓名"),
