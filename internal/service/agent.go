@@ -14,13 +14,15 @@ import (
 )
 
 type AgentService struct {
-	uc *biz.AgentUsecase
+	uc      *biz.AgentUsecase
+	modelUc *biz.ModelUsecase
 	pb.UnimplementedAgentServiceServer
 }
 
-func NewAgentService(uc *biz.AgentUsecase) *AgentService {
+func NewAgentService(uc *biz.AgentUsecase, modelUc *biz.ModelUsecase) *AgentService {
 	return &AgentService{
-		uc: uc,
+		uc:      uc,
+		modelUc: modelUc,
 	}
 }
 
@@ -379,6 +381,367 @@ func (s *AgentService) DeleteAgent(ctx context.Context, req *pb.GetAgentByIdRequ
 	}, nil
 }
 
+// getModelName 获取模型名称（辅助函数）
+func (s *AgentService) getModelName(ctx context.Context, modelID string) string {
+	if modelID == "" {
+		return ""
+	}
+	config, err := s.modelUc.GetModelConfigByID(ctx, modelID)
+	if err != nil || config == nil {
+		return ""
+	}
+	return config.ModelName
+}
+
+// templateToVO 将模板转换为VO（包含模型名称）
+func (s *AgentService) templateToVO(ctx context.Context, t *biz.AgentTemplate) map[string]interface{} {
+	vo := map[string]interface{}{
+		"id":              t.ID,
+		"agentCode":       t.AgentCode,
+		"agentName":       t.AgentName,
+		"asrModelId":      t.ASRModelID,
+		"vadModelId":      t.VADModelID,
+		"llmModelId":      t.LLMModelID,
+		"vllmModelId":     t.VLLMModelID,
+		"ttsModelId":      t.TTSModelID,
+		"ttsVoiceId":      t.TTSVoiceID,
+		"memModelId":      t.MemModelID,
+		"intentModelId":   t.IntentModelID,
+		"chatHistoryConf": t.ChatHistoryConf,
+		"systemPrompt":    t.SystemPrompt,
+		"summaryMemory":   t.SummaryMemory,
+		"langCode":        t.LangCode,
+		"language":        t.Language,
+		"sort":            t.Sort,
+		"ttsModelName":    s.getModelName(ctx, t.TTSModelID),
+		"llmModelName":    s.getModelName(ctx, t.LLMModelID),
+	}
+	return vo
+}
+
+// GetAgentTemplatePage 分页查询模板
+func (s *AgentService) GetAgentTemplatePage(ctx context.Context, req *pb.AgentTemplatePageRequest) (*pb.Response, error) {
+	// 解析查询参数
+	params := &biz.ListAgentTemplateParams{}
+	if req.AgentName != nil && req.AgentName.GetValue() != "" {
+		agentName := req.AgentName.GetValue()
+		params.AgentName = &agentName
+	}
+
+	// 解析分页参数
+	page := &kit.PageRequest{}
+	pageNo := req.GetPage()
+	if pageNo == 0 {
+		pageNo = 1
+	}
+	pageSize := req.GetLimit()
+	if pageSize == 0 {
+		pageSize = kit.DEFAULT_PAGE_ZISE
+	}
+	page.SetPageNo(int(pageNo))
+	page.SetPageSize(int(pageSize))
+	page.SetSortAsc()
+	page.SetSortField("sort")
+
+	// 查询列表和总数
+	list, total, err := s.uc.GetAgentTemplatePage(ctx, params, page)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 转换为VO列表
+	voList := make([]interface{}, 0, len(list))
+	for _, t := range list {
+		voList = append(voList, s.templateToVO(ctx, t))
+	}
+
+	// 构建响应数据
+	data := map[string]interface{}{
+		"total": int32(total),
+		"list":  voList,
+	}
+
+	dataStruct, err := structpb.NewStruct(data)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  "构建响应数据失败: " + err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+		Data: dataStruct,
+	}, nil
+}
+
+// GetAgentTemplateById 获取模板详情
+func (s *AgentService) GetAgentTemplateById(ctx context.Context, req *pb.GetAgentByIdRequest) (*pb.Response, error) {
+	if req == nil || req.GetId() == "" {
+		return &pb.Response{
+			Code: 400,
+			Msg:  "模板ID不能为空",
+		}, nil
+	}
+
+	template, err := s.uc.GetAgentTemplateByID(ctx, req.GetId())
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+	if template == nil {
+		return &pb.Response{
+			Code: 404,
+			Msg:  "模板不存在",
+		}, nil
+	}
+
+	// 转换为VO
+	vo := s.templateToVO(ctx, template)
+
+	dataStruct, err := structpb.NewStruct(vo)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  "构建响应数据失败: " + err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+		Data: dataStruct,
+	}, nil
+}
+
+// CreateAgentTemplate 创建模板
+func (s *AgentService) CreateAgentTemplate(ctx context.Context, req *pb.AgentTemplateCreateRequest) (*pb.Response, error) {
+	if req == nil || req.GetAgentName() == "" {
+		return &pb.Response{
+			Code: 400,
+			Msg:  "模板名称不能为空",
+		}, nil
+	}
+
+	template := &biz.AgentTemplate{
+		AgentName: req.GetAgentName(),
+	}
+
+	if req.AgentCode != nil {
+		template.AgentCode = req.AgentCode.GetValue()
+	}
+	if req.AsrModelId != nil {
+		template.ASRModelID = req.AsrModelId.GetValue()
+	}
+	if req.VadModelId != nil {
+		template.VADModelID = req.VadModelId.GetValue()
+	}
+	if req.LlmModelId != nil {
+		template.LLMModelID = req.LlmModelId.GetValue()
+	}
+	if req.VllmModelId != nil {
+		template.VLLMModelID = req.VllmModelId.GetValue()
+	}
+	if req.TtsModelId != nil {
+		template.TTSModelID = req.TtsModelId.GetValue()
+	}
+	if req.TtsVoiceId != nil {
+		template.TTSVoiceID = req.TtsVoiceId.GetValue()
+	}
+	if req.MemModelId != nil {
+		template.MemModelID = req.MemModelId.GetValue()
+	}
+	if req.IntentModelId != nil {
+		template.IntentModelID = req.IntentModelId.GetValue()
+	}
+	if req.SystemPrompt != nil {
+		template.SystemPrompt = req.SystemPrompt.GetValue()
+	}
+	if req.SummaryMemory != nil {
+		template.SummaryMemory = req.SummaryMemory.GetValue()
+	}
+	if req.LangCode != nil {
+		template.LangCode = req.LangCode.GetValue()
+	}
+	if req.Language != nil {
+		template.Language = req.Language.GetValue()
+	}
+	if req.ChatHistoryConf != nil {
+		template.ChatHistoryConf = int8(req.ChatHistoryConf.GetValue())
+	}
+
+	created, err := s.uc.CreateAgentTemplate(ctx, template)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 转换为VO
+	vo := s.templateToVO(ctx, created)
+
+	dataStruct, err := structpb.NewStruct(vo)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  "构建响应数据失败: " + err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+		Data: dataStruct,
+	}, nil
+}
+
+// UpdateAgentTemplate 更新模板
+func (s *AgentService) UpdateAgentTemplate(ctx context.Context, req *pb.AgentTemplateUpdateRequest) (*pb.Response, error) {
+	if req == nil || req.GetId() == "" {
+		return &pb.Response{
+			Code: 400,
+			Msg:  "模板ID不能为空",
+		}, nil
+	}
+
+	template := &biz.AgentTemplate{
+		ID: req.GetId(),
+	}
+
+	if req.AgentCode != nil {
+		template.AgentCode = req.AgentCode.GetValue()
+	}
+	if req.AgentName != nil {
+		template.AgentName = req.AgentName.GetValue()
+	}
+	if req.AsrModelId != nil {
+		template.ASRModelID = req.AsrModelId.GetValue()
+	}
+	if req.VadModelId != nil {
+		template.VADModelID = req.VadModelId.GetValue()
+	}
+	if req.LlmModelId != nil {
+		template.LLMModelID = req.LlmModelId.GetValue()
+	}
+	if req.VllmModelId != nil {
+		template.VLLMModelID = req.VllmModelId.GetValue()
+	}
+	if req.TtsModelId != nil {
+		template.TTSModelID = req.TtsModelId.GetValue()
+	}
+	if req.TtsVoiceId != nil {
+		template.TTSVoiceID = req.TtsVoiceId.GetValue()
+	}
+	if req.MemModelId != nil {
+		template.MemModelID = req.MemModelId.GetValue()
+	}
+	if req.IntentModelId != nil {
+		template.IntentModelID = req.IntentModelId.GetValue()
+	}
+	if req.SystemPrompt != nil {
+		template.SystemPrompt = req.SystemPrompt.GetValue()
+	}
+	if req.SummaryMemory != nil {
+		template.SummaryMemory = req.SummaryMemory.GetValue()
+	}
+	if req.LangCode != nil {
+		template.LangCode = req.LangCode.GetValue()
+	}
+	if req.Language != nil {
+		template.Language = req.Language.GetValue()
+	}
+	if req.ChatHistoryConf != nil {
+		template.ChatHistoryConf = int8(req.ChatHistoryConf.GetValue())
+	}
+
+	err := s.uc.UpdateAgentTemplate(ctx, template)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 获取更新后的模板
+	updated, err := s.uc.GetAgentTemplateByID(ctx, req.GetId())
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 转换为VO
+	vo := s.templateToVO(ctx, updated)
+
+	dataStruct, err := structpb.NewStruct(vo)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  "构建响应数据失败: " + err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+		Data: dataStruct,
+	}, nil
+}
+
+// DeleteAgentTemplate 删除模板
+func (s *AgentService) DeleteAgentTemplate(ctx context.Context, req *pb.GetAgentByIdRequest) (*pb.Response, error) {
+	if req == nil || req.GetId() == "" {
+		return &pb.Response{
+			Code: 400,
+			Msg:  "模板ID不能为空",
+		}, nil
+	}
+
+	err := s.uc.DeleteAgentTemplate(ctx, req.GetId())
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "删除模板成功",
+	}, nil
+}
+
+// BatchDeleteAgentTemplates 批量删除模板
+func (s *AgentService) BatchDeleteAgentTemplates(ctx context.Context, req *pb.AgentTemplateBatchRemoveRequest) (*pb.Response, error) {
+	if req == nil || len(req.GetIds()) == 0 {
+		return &pb.Response{
+			Code: 400,
+			Msg:  "模板ID列表不能为空",
+		}, nil
+	}
+
+	err := s.uc.BatchDeleteAgentTemplates(ctx, req.GetIds())
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "批量删除成功",
+	}, nil
+}
+
 // GetAgentTemplates 获取智能体模板列表
 func (s *AgentService) GetAgentTemplates(ctx context.Context, req *pb.Empty) (*pb.Response, error) {
 	templates, err := s.uc.GetAgentTemplateList(ctx)
@@ -392,17 +755,17 @@ func (s *AgentService) GetAgentTemplates(ctx context.Context, req *pb.Empty) (*p
 	templateList := make([]interface{}, 0, len(templates))
 	for _, t := range templates {
 		templateList = append(templateList, map[string]interface{}{
-			"id":              fmt.Sprintf("%d", t.ID),
+			"id":              t.ID,
 			"agentCode":       t.AgentCode,
 			"agentName":       t.AgentName,
-			"asrModelId":      fmt.Sprintf("%d", t.ASRModelID),
-			"vadModelId":      fmt.Sprintf("%d", t.VADModelID),
-			"llmModelId":      fmt.Sprintf("%d", t.LLMModelID),
-			"vllmModelId":     fmt.Sprintf("%d", t.VLLMModelID),
-			"ttsModelId":      fmt.Sprintf("%d", t.TTSModelID),
-			"ttsVoiceId":      fmt.Sprintf("%d", t.TTSVoiceID),
-			"memModelId":      fmt.Sprintf("%d", t.MemModelID),
-			"intentModelId":   fmt.Sprintf("%d", t.IntentModelID),
+			"asrModelId":      t.ASRModelID,
+			"vadModelId":      t.VADModelID,
+			"llmModelId":      t.LLMModelID,
+			"vllmModelId":     t.VLLMModelID,
+			"ttsModelId":      t.TTSModelID,
+			"ttsVoiceId":      t.TTSVoiceID,
+			"memModelId":      t.MemModelID,
+			"intentModelId":   t.IntentModelID,
 			"chatHistoryConf": t.ChatHistoryConf,
 			"systemPrompt":    t.SystemPrompt,
 			"summaryMemory":   t.SummaryMemory,

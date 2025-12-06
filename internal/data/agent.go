@@ -303,28 +303,262 @@ func (r *agentRepo) GetAgentTemplateList(ctx context.Context) ([]*biz.AgentTempl
 
 	result := make([]*biz.AgentTemplate, len(templates))
 	for i, t := range templates {
-		result[i] = &biz.AgentTemplate{
-			ID:              t.ID,
-			AgentCode:       t.AgentCode,
-			AgentName:       t.AgentName,
-			ASRModelID:      t.AsrModelID,
-			VADModelID:      t.VadModelID,
-			LLMModelID:      t.LlmModelID,
-			VLLMModelID:     t.VllmModelID,
-			TTSModelID:      t.TtsModelID,
-			TTSVoiceID:      t.TtsVoiceID,
-			MemModelID:      t.MemModelID,
-			IntentModelID:   t.IntentModelID,
-			ChatHistoryConf: int8(t.ChatHistoryConf),
-			SystemPrompt:    t.SystemPrompt,
-			SummaryMemory:   t.SummaryMemory,
-			LangCode:        t.LangCode,
-			Language:        t.Language,
-			Sort:            int8(t.Sort),
-		}
+		result[i] = r.entityToAgentTemplate(t)
 	}
 
 	return result, nil
+}
+
+// GetAgentTemplatePage 分页查询模板
+func (r *agentRepo) GetAgentTemplatePage(ctx context.Context, params *biz.ListAgentTemplateParams, page *kit.PageRequest) ([]*biz.AgentTemplate, int, error) {
+	query := r.data.db.AgentTemplate.Query()
+
+	// 应用过滤条件
+	if params != nil && params.AgentName != nil && *params.AgentName != "" {
+		query = query.Where(agenttemplate.AgentNameContains(*params.AgentName))
+	}
+
+	// 获取总数
+	total, err := query.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 默认按sort字段升序排序
+	if page == nil {
+		page = &kit.PageRequest{}
+	}
+	page.SetSortAsc()
+	page.SetSortField("sort")
+
+	// 应用分页
+	applyPagination(query, page, agenttemplate.Columns)
+
+	templates, err := query.All(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	result := make([]*biz.AgentTemplate, len(templates))
+	for i, t := range templates {
+		result[i] = r.entityToAgentTemplate(t)
+	}
+
+	return result, total, nil
+}
+
+// GetAgentTemplateByID 获取模板详情
+func (r *agentRepo) GetAgentTemplateByID(ctx context.Context, id string) (*biz.AgentTemplate, error) {
+	template, err := r.data.db.AgentTemplate.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return r.entityToAgentTemplate(template), nil
+}
+
+// CreateAgentTemplate 创建模板
+func (r *agentRepo) CreateAgentTemplate(ctx context.Context, template *biz.AgentTemplate) (*biz.AgentTemplate, error) {
+	create := r.data.db.AgentTemplate.Create().
+		SetID(template.ID).
+		SetSort(int32(template.Sort))
+
+	if template.AgentCode != "" {
+		create.SetAgentCode(template.AgentCode)
+	}
+	if template.AgentName != "" {
+		create.SetAgentName(template.AgentName)
+	}
+	if template.ASRModelID != "" {
+		create.SetAsrModelID(template.ASRModelID)
+	}
+	if template.VADModelID != "" {
+		create.SetVadModelID(template.VADModelID)
+	}
+	if template.LLMModelID != "" {
+		create.SetLlmModelID(template.LLMModelID)
+	}
+	if template.VLLMModelID != "" {
+		create.SetVllmModelID(template.VLLMModelID)
+	}
+	if template.TTSModelID != "" {
+		create.SetTtsModelID(template.TTSModelID)
+	}
+	if template.TTSVoiceID != "" {
+		create.SetTtsVoiceID(template.TTSVoiceID)
+	}
+	if template.MemModelID != "" {
+		create.SetMemModelID(template.MemModelID)
+	}
+	if template.IntentModelID != "" {
+		create.SetIntentModelID(template.IntentModelID)
+	}
+	if template.SystemPrompt != "" {
+		create.SetSystemPrompt(template.SystemPrompt)
+	}
+	if template.SummaryMemory != "" {
+		create.SetSummaryMemory(template.SummaryMemory)
+	}
+	if template.LangCode != "" {
+		create.SetLangCode(template.LangCode)
+	}
+	if template.Language != "" {
+		create.SetLanguage(template.Language)
+	}
+	create.SetChatHistoryConf(int32(template.ChatHistoryConf))
+
+	entity, err := create.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.entityToAgentTemplate(entity), nil
+}
+
+// UpdateAgentTemplate 更新模板
+func (r *agentRepo) UpdateAgentTemplate(ctx context.Context, template *biz.AgentTemplate) error {
+	update := r.data.db.AgentTemplate.UpdateOneID(template.ID)
+
+	if template.AgentCode != "" {
+		update.SetAgentCode(template.AgentCode)
+	}
+	if template.AgentName != "" {
+		update.SetAgentName(template.AgentName)
+	}
+	if template.ASRModelID != "" {
+		update.SetAsrModelID(template.ASRModelID)
+	}
+	if template.VADModelID != "" {
+		update.SetVadModelID(template.VADModelID)
+	}
+	if template.LLMModelID != "" {
+		update.SetLlmModelID(template.LLMModelID)
+	}
+	if template.VLLMModelID != "" {
+		update.SetVllmModelID(template.VLLMModelID)
+	}
+	if template.TTSModelID != "" {
+		update.SetTtsModelID(template.TTSModelID)
+	}
+	if template.TTSVoiceID != "" {
+		update.SetTtsVoiceID(template.TTSVoiceID)
+	}
+	if template.MemModelID != "" {
+		update.SetMemModelID(template.MemModelID)
+	}
+	if template.IntentModelID != "" {
+		update.SetIntentModelID(template.IntentModelID)
+	}
+	if template.SystemPrompt != "" {
+		update.SetSystemPrompt(template.SystemPrompt)
+	}
+	if template.SummaryMemory != "" {
+		update.SetSummaryMemory(template.SummaryMemory)
+	}
+	if template.LangCode != "" {
+		update.SetLangCode(template.LangCode)
+	}
+	if template.Language != "" {
+		update.SetLanguage(template.Language)
+	}
+	// ChatHistoryConf 总是更新（因为它是int8类型，0也是有效值）
+	update.SetChatHistoryConf(int32(template.ChatHistoryConf))
+
+	_, err := update.Save(ctx)
+	return err
+}
+
+// DeleteAgentTemplate 删除模板
+func (r *agentRepo) DeleteAgentTemplate(ctx context.Context, id string) error {
+	_, err := r.data.db.AgentTemplate.Delete().Where(agenttemplate.IDEQ(id)).Exec(ctx)
+	return err
+}
+
+// BatchDeleteAgentTemplates 批量删除模板
+func (r *agentRepo) BatchDeleteAgentTemplates(ctx context.Context, ids []string) error {
+	_, err := r.data.db.AgentTemplate.Delete().Where(agenttemplate.IDIn(ids...)).Exec(ctx)
+	return err
+}
+
+// GetNextAvailableSort 获取下一个可用的排序值
+func (r *agentRepo) GetNextAvailableSort(ctx context.Context) (int8, error) {
+	templates, err := r.data.db.AgentTemplate.Query().
+		Select(agenttemplate.FieldSort).
+		Order(ent.Asc(agenttemplate.FieldSort)).
+		All(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	// 如果没有排序值，返回1
+	if len(templates) == 0 {
+		return 1, nil
+	}
+
+	// 收集所有排序值
+	sortValues := make([]int32, 0, len(templates))
+	for _, t := range templates {
+		if t.Sort > 0 {
+			sortValues = append(sortValues, t.Sort)
+		}
+	}
+
+	if len(sortValues) == 0 {
+		return 1, nil
+	}
+
+	// 寻找最小的未使用序号
+	expectedSort := int32(1)
+	for _, sort := range sortValues {
+		if sort > expectedSort {
+			// 找到空缺的序号
+			return int8(expectedSort), nil
+		}
+		expectedSort = sort + 1
+	}
+
+	// 如果没有空缺，返回最大序号+1
+	return int8(expectedSort), nil
+}
+
+// ReorderTemplatesAfterDelete 删除后重新排序
+func (r *agentRepo) ReorderTemplatesAfterDelete(ctx context.Context, deletedSort int8) error {
+	if deletedSort <= 0 {
+		return nil
+	}
+
+	// 查询所有排序值大于被删除模板的记录
+	_, err := r.data.db.AgentTemplate.Update().
+		Where(agenttemplate.SortGT(int32(deletedSort))).
+		AddSort(-1).
+		Save(ctx)
+	return err
+}
+
+// entityToAgentTemplate 实体转换为业务对象
+func (r *agentRepo) entityToAgentTemplate(t *ent.AgentTemplate) *biz.AgentTemplate {
+	return &biz.AgentTemplate{
+		ID:              t.ID,
+		AgentCode:       t.AgentCode,
+		AgentName:       t.AgentName,
+		ASRModelID:      t.AsrModelID,
+		VADModelID:      t.VadModelID,
+		LLMModelID:      t.LlmModelID,
+		VLLMModelID:     t.VllmModelID,
+		TTSModelID:      t.TtsModelID,
+		TTSVoiceID:      t.TtsVoiceID,
+		MemModelID:      t.MemModelID,
+		IntentModelID:   t.IntentModelID,
+		ChatHistoryConf: int8(t.ChatHistoryConf),
+		SystemPrompt:    t.SystemPrompt,
+		SummaryMemory:   t.SummaryMemory,
+		LangCode:        t.LangCode,
+		Language:        t.Language,
+		Sort:            int8(t.Sort),
+	}
 }
 
 // GetSessionsByAgentID 会话列表（分组统计）

@@ -114,6 +114,80 @@ message AgentTemplateDTO {
   int32 sort = 17;                  // 排序
 }
 
+// AgentTemplateVO 智能体模板VO（包含模型名称）
+message AgentTemplateVO {
+  string id = 1;                    // 模板ID
+  string agent_code = 2;            // 智能体编码
+  string agent_name = 3;            // 智能体名称
+  string asr_model_id = 4;          // 语音识别模型标识
+  string vad_model_id = 5;          // 语音活动检测标识
+  string llm_model_id = 6;          // 大语言模型标识
+  string vllm_model_id = 7;         // VLLM模型标识
+  string tts_model_id = 8;          // 语音合成模型标识
+  string tts_voice_id = 9;          // 音色标识
+  string mem_model_id = 10;         // 记忆模型标识
+  string intent_model_id = 11;      // 意图模型标识
+  int32 chat_history_conf = 12;     // 聊天记录配置
+  string system_prompt = 13;        // 角色设定参数
+  string summary_memory = 14;       // 总结记忆
+  string lang_code = 15;             // 语言编码
+  string language = 16;             // 交互语种
+  int32 sort = 17;                  // 排序
+  string tts_model_name = 18;       // TTS模型名称
+  string llm_model_name = 19;       // LLM模型名称
+}
+
+// AgentTemplatePageRequest 分页查询模板请求
+message AgentTemplatePageRequest {
+  int64 page = 1;                   // 页码，从1开始
+  int64 limit = 2;                  // 每页数量
+  google.protobuf.StringValue agent_name = 3; // 模板名称，模糊查询
+}
+
+// AgentTemplateCreateRequest 创建模板请求
+message AgentTemplateCreateRequest {
+  google.protobuf.StringValue agent_code = 1;       // 智能体编码
+  string agent_name = 2 [(validate.rules).string.min_len = 1]; // 智能体名称（必填）
+  google.protobuf.StringValue asr_model_id = 3;     // 语音识别模型标识
+  google.protobuf.StringValue vad_model_id = 4;      // 语音活动检测标识
+  google.protobuf.StringValue llm_model_id = 5;     // 大语言模型标识
+  google.protobuf.StringValue vllm_model_id = 6;    // VLLM模型标识
+  google.protobuf.StringValue tts_model_id = 7;     // 语音合成模型标识
+  google.protobuf.StringValue tts_voice_id = 8;     // 音色标识
+  google.protobuf.StringValue mem_model_id = 9;     // 记忆模型标识
+  google.protobuf.StringValue intent_model_id = 10;  // 意图模型标识
+  google.protobuf.Int32Value chat_history_conf = 11; // 聊天记录配置
+  google.protobuf.StringValue system_prompt = 12;    // 角色设定参数
+  google.protobuf.StringValue summary_memory = 13;   // 总结记忆
+  google.protobuf.StringValue lang_code = 14;        // 语言编码
+  google.protobuf.StringValue language = 15;         // 交互语种
+}
+
+// AgentTemplateUpdateRequest 更新模板请求
+message AgentTemplateUpdateRequest {
+  string id = 1 [(validate.rules).string.min_len = 1]; // 模板ID（必填）
+  google.protobuf.StringValue agent_code = 2;       // 智能体编码
+  google.protobuf.StringValue agent_name = 3;     // 智能体名称
+  google.protobuf.StringValue asr_model_id = 4;   // 语音识别模型标识
+  google.protobuf.StringValue vad_model_id = 5;    // 语音活动检测标识
+  google.protobuf.StringValue llm_model_id = 6;   // 大语言模型标识
+  google.protobuf.StringValue vllm_model_id = 7;  // VLLM模型标识
+  google.protobuf.StringValue tts_model_id = 8;   // 语音合成模型标识
+  google.protobuf.StringValue tts_voice_id = 9;    // 音色标识
+  google.protobuf.StringValue mem_model_id = 10;   // 记忆模型标识
+  google.protobuf.StringValue intent_model_id = 11; // 意图模型标识
+  google.protobuf.Int32Value chat_history_conf = 12; // 聊天记录配置
+  google.protobuf.StringValue system_prompt = 13;   // 角色设定参数
+  google.protobuf.StringValue summary_memory = 14;  // 总结记忆
+  google.protobuf.StringValue lang_code = 15;      // 语言编码
+  google.protobuf.StringValue language = 16;       // 交互语种
+}
+
+// AgentTemplateBatchRemoveRequest 批量删除模板请求
+message AgentTemplateBatchRemoveRequest {
+  repeated string ids = 1 [(validate.rules).repeated.min_items = 1]; // 模板ID列表（至少一个）
+}
+
 // AgentChatSessionDTO 智能体会话信息
 message AgentChatSessionDTO {
   string session_id = 1;            // 会话ID
@@ -167,6 +241,69 @@ message PlayAudioRequest {
 
 // AgentService 智能体管理服务
 service AgentService {
+
+    // GetAgentTemplatePage 分页查询模板
+    rpc GetAgentTemplatePage(AgentTemplatePageRequest) returns (Response) {
+      option (google.api.http) = {
+        get: "/agent/template/page"
+      };
+      option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+        summary: "分页查询模板";
+      };
+    }
+
+    // GetAgentTemplateById 获取模板详情
+    rpc GetAgentTemplateById(GetAgentByIdRequest) returns (Response) {
+      option (google.api.http) = {
+        get: "/agent/template/{id}"
+      };
+      option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+        summary: "获取模板详情";
+      };
+    }
+
+    // CreateAgentTemplate 创建模板
+    rpc CreateAgentTemplate(AgentTemplateCreateRequest) returns (Response) {
+      option (google.api.http) = {
+        post: "/agent/template"
+        body: "*"
+      };
+      option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+        summary: "创建模板";
+      };
+    }
+
+    // UpdateAgentTemplate 更新模板
+    rpc UpdateAgentTemplate(AgentTemplateUpdateRequest) returns (Response) {
+      option (google.api.http) = {
+        put: "/agent/template"
+        body: "*"
+      };
+      option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+        summary: "更新模板";
+      };
+    }
+
+    // DeleteAgentTemplate 删除模板
+    rpc DeleteAgentTemplate(GetAgentByIdRequest) returns (Response) {
+      option (google.api.http) = {
+        delete: "/agent/template/{id}"
+      };
+      option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+        summary: "删除模板";
+      };
+    }
+
+    // BatchDeleteAgentTemplates 批量删除模板
+    rpc BatchDeleteAgentTemplates(AgentTemplateBatchRemoveRequest) returns (Response) {
+      option (google.api.http) = {
+        post: "/agent/template/batch-remove"
+        body: "*"
+      };
+      option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+        summary: "批量删除模板";
+      };
+    }
 
     // GetAgentTemplates 获取智能体模板列表
     rpc GetAgentTemplates(Empty) returns (Response) {

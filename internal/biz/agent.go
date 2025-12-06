@@ -84,6 +84,34 @@ type AgentTemplate struct {
 	Sort            int8
 }
 
+// AgentTemplateVO 智能体模板VO（包含模型名称）
+type AgentTemplateVO struct {
+	ID              string
+	AgentCode       string
+	AgentName       string
+	ASRModelID      string
+	VADModelID      string
+	LLMModelID      string
+	VLLMModelID     string
+	TTSModelID      string
+	TTSVoiceID      string
+	MemModelID      string
+	IntentModelID   string
+	ChatHistoryConf int8
+	SystemPrompt    string
+	SummaryMemory   string
+	LangCode        string
+	Language        string
+	Sort            int8
+	TTSModelName    string
+	LLMModelName    string
+}
+
+// ListAgentTemplateParams 模板查询参数
+type ListAgentTemplateParams struct {
+	AgentName *string // 模板名称，模糊查询
+}
+
 // AgentChatSession 智能体会话
 type AgentChatSession struct {
 	SessionID string
@@ -119,6 +147,14 @@ type AgentRepo interface {
 	UpdateAgent(ctx context.Context, agent *Agent) error
 	DeleteAgent(ctx context.Context, id string) error
 	GetAgentTemplateList(ctx context.Context) ([]*AgentTemplate, error)
+	GetAgentTemplatePage(ctx context.Context, params *ListAgentTemplateParams, page *kit.PageRequest) ([]*AgentTemplate, int, error)
+	GetAgentTemplateByID(ctx context.Context, id string) (*AgentTemplate, error)
+	CreateAgentTemplate(ctx context.Context, template *AgentTemplate) (*AgentTemplate, error)
+	UpdateAgentTemplate(ctx context.Context, template *AgentTemplate) error
+	DeleteAgentTemplate(ctx context.Context, id string) error
+	BatchDeleteAgentTemplates(ctx context.Context, ids []string) error
+	GetNextAvailableSort(ctx context.Context) (int8, error)
+	ReorderTemplatesAfterDelete(ctx context.Context, deletedSort int8) error
 	GetSessionsByAgentID(ctx context.Context, agentId string, page *kit.PageRequest) ([]*AgentChatSession, int, error)
 	GetChatHistoryBySessionID(ctx context.Context, agentId, sessionId string) ([]*AgentChatHistory, error)
 	GetRecentFiftyUserChats(ctx context.Context, agentId string) ([]*AgentChatHistoryUserVO, error)
@@ -285,6 +321,119 @@ func (uc *AgentUsecase) DeleteAgent(ctx context.Context, id string) error {
 // GetAgentTemplateList 获取模板列表
 func (uc *AgentUsecase) GetAgentTemplateList(ctx context.Context) ([]*AgentTemplate, error) {
 	return uc.repo.GetAgentTemplateList(ctx)
+}
+
+// GetAgentTemplatePage 分页查询模板
+func (uc *AgentUsecase) GetAgentTemplatePage(ctx context.Context, params *ListAgentTemplateParams, page *kit.PageRequest) ([]*AgentTemplate, int, error) {
+	return uc.repo.GetAgentTemplatePage(ctx, params, page)
+}
+
+// GetAgentTemplateByID 获取模板详情
+func (uc *AgentUsecase) GetAgentTemplateByID(ctx context.Context, id string) (*AgentTemplate, error) {
+	return uc.repo.GetAgentTemplateByID(ctx, id)
+}
+
+// CreateAgentTemplate 创建模板
+func (uc *AgentUsecase) CreateAgentTemplate(ctx context.Context, template *AgentTemplate) (*AgentTemplate, error) {
+	// 获取下一个可用的排序值
+	sort, err := uc.repo.GetNextAvailableSort(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("获取排序值失败: %w", err)
+	}
+	template.Sort = sort
+
+	// 生成ID
+	if template.ID == "" {
+		template.ID = uc.GenerateAgentID()
+	}
+
+	return uc.repo.CreateAgentTemplate(ctx, template)
+}
+
+// UpdateAgentTemplate 更新模板
+func (uc *AgentUsecase) UpdateAgentTemplate(ctx context.Context, template *AgentTemplate) error {
+	// 检查模板是否存在
+	existing, err := uc.repo.GetAgentTemplateByID(ctx, template.ID)
+	if err != nil {
+		return fmt.Errorf("模板不存在: %w", err)
+	}
+	if existing == nil {
+		return fmt.Errorf("模板不存在")
+	}
+
+	// 只更新提供的字段
+	if template.AgentCode != "" {
+		existing.AgentCode = template.AgentCode
+	}
+	if template.AgentName != "" {
+		existing.AgentName = template.AgentName
+	}
+	if template.ASRModelID != "" {
+		existing.ASRModelID = template.ASRModelID
+	}
+	if template.VADModelID != "" {
+		existing.VADModelID = template.VADModelID
+	}
+	if template.LLMModelID != "" {
+		existing.LLMModelID = template.LLMModelID
+	}
+	if template.VLLMModelID != "" {
+		existing.VLLMModelID = template.VLLMModelID
+	}
+	if template.TTSModelID != "" {
+		existing.TTSModelID = template.TTSModelID
+	}
+	if template.TTSVoiceID != "" {
+		existing.TTSVoiceID = template.TTSVoiceID
+	}
+	if template.MemModelID != "" {
+		existing.MemModelID = template.MemModelID
+	}
+	if template.IntentModelID != "" {
+		existing.IntentModelID = template.IntentModelID
+	}
+	if template.SystemPrompt != "" {
+		existing.SystemPrompt = template.SystemPrompt
+	}
+	if template.SummaryMemory != "" {
+		existing.SummaryMemory = template.SummaryMemory
+	}
+	if template.LangCode != "" {
+		existing.LangCode = template.LangCode
+	}
+	if template.Language != "" {
+		existing.Language = template.Language
+	}
+
+	return uc.repo.UpdateAgentTemplate(ctx, existing)
+}
+
+// DeleteAgentTemplate 删除模板
+func (uc *AgentUsecase) DeleteAgentTemplate(ctx context.Context, id string) error {
+	// 先查询要删除的模板信息，获取其排序值
+	template, err := uc.repo.GetAgentTemplateByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("模板不存在: %w", err)
+	}
+	if template == nil {
+		return fmt.Errorf("模板不存在")
+	}
+
+	deletedSort := template.Sort
+
+	// 执行删除操作
+	err = uc.repo.DeleteAgentTemplate(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// 删除成功后，重新排序剩余模板
+	return uc.repo.ReorderTemplatesAfterDelete(ctx, deletedSort)
+}
+
+// BatchDeleteAgentTemplates 批量删除模板
+func (uc *AgentUsecase) BatchDeleteAgentTemplates(ctx context.Context, ids []string) error {
+	return uc.repo.BatchDeleteAgentTemplates(ctx, ids)
 }
 
 // GetAgentSessions 获取智能体会话列表
