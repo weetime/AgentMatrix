@@ -141,6 +141,11 @@ func GetDictDataByTypeKey(dictType string) string {
 	return fmt.Sprintf("sys:dict:data:%s", dictType)
 }
 
+// GetTimbreNameByIdKey 获取音色名称缓存key
+func GetTimbreNameByIdKey(id string) string {
+	return fmt.Sprintf("timbre:name:%s", id)
+}
+
 // GetRedisObject 获取Redis对象（辅助函数，用于直接使用redis.Client的场景）
 func GetRedisObject(ctx context.Context, client *redis.Client, key string, dest interface{}) error {
 	val, err := client.Get(ctx, key).Result()

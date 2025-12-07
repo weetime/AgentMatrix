@@ -224,8 +224,8 @@
 | 53 | GET | `/agent/voice-print/list/{id}` | 获取智能体声纹列表 | 普通用户 | 0.5天 | ✅ 已完成 |
 
 **MCP 接入点管理**:
-| 54 | GET | `/agent/mcp/address/{agentId}` | 获取 MCP 接入点地址 | 普通用户 | 0.5天 | ❌ 未开始 |
-| 55 | GET | `/agent/mcp/tools/{agentId}` | 获取 MCP 工具列表 | 普通用户 | 0.5天 | ❌ 未开始 |
+| 54 | GET | `/agent/mcp/address/{agentId}` | 获取 MCP 接入点地址 | 普通用户 | 0.5天 | ✅ 已完成  |
+| 55 | GET | `/agent/mcp/tools/{agentId}` | 获取 MCP 工具列表 | 普通用户 | 0.5天 | ✅ 已完成  |
 
 **Phase 4 总计**: 约 20 天（4周）
 

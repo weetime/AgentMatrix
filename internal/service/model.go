@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/weetime/agent-matrix/internal/biz"
+	"github.com/weetime/agent-matrix/internal/constant"
 	"github.com/weetime/agent-matrix/internal/kit"
 	"github.com/weetime/agent-matrix/internal/middleware"
 	pb "github.com/weetime/agent-matrix/protos/v1"
@@ -19,14 +20,18 @@ import (
 type ModelService struct {
 	uc            *biz.ModelUsecase
 	providerUC    *biz.ModelProviderUsecase
+	ttsVoiceUC    *biz.TtsVoiceUsecase
+	voiceCloneUC  *biz.VoiceCloneUsecase
 	configService *ConfigService // 用于刷新配置缓存
 	pb.UnimplementedModelServiceServer
 }
 
-func NewModelService(uc *biz.ModelUsecase, providerUC *biz.ModelProviderUsecase, configService *ConfigService) *ModelService {
+func NewModelService(uc *biz.ModelUsecase, providerUC *biz.ModelProviderUsecase, ttsVoiceUC *biz.TtsVoiceUsecase, voiceCloneUC *biz.VoiceCloneUsecase, configService *ConfigService) *ModelService {
 	return &ModelService{
 		uc:            uc,
 		providerUC:    providerUC,
+		ttsVoiceUC:    ttsVoiceUC,
+		voiceCloneUC:  voiceCloneUC,
 		configService: configService,
 	}
 }
@@ -456,11 +461,93 @@ func (s *ModelService) SetDefaultModel(ctx context.Context, req *pb.SetDefaultMo
 
 // GetModelVoices 获取模型音色
 func (s *ModelService) GetModelVoices(ctx context.Context, req *pb.GetModelVoicesRequest) (*pb.Response, error) {
-	// TODO: 实现音色查询逻辑
-	// 需要调用TimbreService.getVoiceNames(modelId, voiceName)
-	// 目前返回空列表
-	dtoList := make([]interface{}, 0)
+	modelId := req.GetModelId()
+	if modelId == "" {
+		return &pb.Response{
+			Code: 400,
+			Msg:  "modelId不能为空",
+		}, nil
+	}
 
+	// 解析可选的 voice_name 参数
+	var voiceName *string
+	if req.VoiceName != nil && req.VoiceName.GetValue() != "" {
+		name := req.VoiceName.GetValue()
+		voiceName = &name
+	}
+
+	// 1. 查询普通音色（根据 tts_model_id 和 voice_name 过滤）
+	params := &biz.ListTtsVoiceParams{
+		TtsModelID: modelId,
+		Name:       voiceName,
+	}
+	// 创建一个不分页的查询（设置一个很大的 limit）
+	page := &kit.PageRequest{}
+	page.SetPageNo(1)
+	page.SetPageSize(10000) // 设置一个很大的值，实际返回所有结果
+	page.SetSortAsc()
+	page.SetSortField("sort")
+
+	ttsVoices, err := s.ttsVoiceUC.ListTtsVoice(ctx, params, page)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  "查询音色失败: " + err.Error(),
+		}, nil
+	}
+
+	// 2. 转换为 VoiceDTO 格式
+	voiceDTOs := make([]*biz.VoiceDTO, 0, len(ttsVoices))
+	for _, voice := range ttsVoices {
+		voiceDTOs = append(voiceDTOs, &biz.VoiceDTO{
+			ID:        voice.ID,
+			Name:      voice.Name,
+			VoiceDemo: voice.VoiceDemo,
+		})
+	}
+
+	// 3. 获取当前登录用户ID
+	userID, err := middleware.GetUserIdFromContext(ctx)
+	if err == nil && userID > 0 {
+		// 4. 查询用户训练成功的克隆音色
+		cloneVoices, err := s.voiceCloneUC.GetTrainSuccess(ctx, modelId, userID)
+		if err != nil {
+			// 查询克隆音色失败不影响主流程，记录日志但继续执行
+			// 这里可以选择记录日志或忽略错误
+		} else if len(cloneVoices) > 0 {
+			// 5. 将克隆音色添加到列表前面，并在名称前加上前缀
+			prefixedClones := make([]*biz.VoiceDTO, len(cloneVoices))
+			for i, clone := range cloneVoices {
+				prefixedClones[i] = &biz.VoiceDTO{
+					ID:        clone.ID,
+					Name:      constant.VoiceClonePrefix + clone.Name,
+					VoiceDemo: clone.VoiceDemo,
+				}
+			}
+			// 将克隆音色添加到列表前面
+			voiceDTOs = append(prefixedClones, voiceDTOs...)
+
+			// 6. 将克隆音色名称缓存到 Redis（永久过期）
+			// 注意：需要从 Data 中获取 Redis 客户端，这里暂时跳过
+			// 如果 ModelService 需要访问 Redis，可以在结构体中添加 RedisClient 字段
+			// 为了简化，这里先不实现 Redis 缓存，后续可以根据需要添加
+		}
+	}
+
+	// 7. 转换为接口列表
+	dtoList := make([]interface{}, len(voiceDTOs))
+	for i, dto := range voiceDTOs {
+		dtoMap := map[string]interface{}{
+			"id":   dto.ID,
+			"name": dto.Name,
+		}
+		if dto.VoiceDemo != "" {
+			dtoMap["voiceDemo"] = dto.VoiceDemo
+		}
+		dtoList[i] = dtoMap
+	}
+
+	// 8. 构建响应数据
 	data := map[string]interface{}{
 		"list": dtoList,
 	}
