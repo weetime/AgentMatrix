@@ -1330,8 +1330,13 @@ func (s *AgentService) GetAgentMcpTools(ctx context.Context, req *pb.GetAgentMcp
 	}
 
 	// 返回工具列表
-	// 将数组转换为 structpb.Value，直接作为 data 字段的值
-	dataValue, err := structpb.NewValue(agentMcpToolsList)
+	// 将 []string 转换为 []interface{}，然后使用 structpb.NewValue
+	toolsInterface := make([]interface{}, len(agentMcpToolsList))
+	for i, tool := range agentMcpToolsList {
+		toolsInterface[i] = tool
+	}
+
+	dataValue, err := structpb.NewValue(toolsInterface)
 	if err != nil {
 		return &pb.Response{
 			Code: 500,
