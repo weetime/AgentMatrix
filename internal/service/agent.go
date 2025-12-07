@@ -48,7 +48,7 @@ func (s *AgentService) ListUserAgents(ctx context.Context, req *pb.Empty) (*pb.R
 		}, nil
 	}
 
-	// 转换为DTO列表
+	// 转换为DTO列表（不包含内部使用的ID字段）
 	dtoList := make([]interface{}, 0, len(agents))
 	for _, agent := range agents {
 		dtoList = append(dtoList, map[string]interface{}{

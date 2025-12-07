@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/weetime/agent-matrix/internal/biz"
 	"github.com/weetime/agent-matrix/internal/data/ent"
@@ -49,16 +50,22 @@ func (r *agentRepo) ListUserAgents(ctx context.Context, userId int64) ([]*biz.Ag
 			deviceCount = 0
 		}
 
-		result[i] = &biz.AgentDTO{
+		// 创建 DTO，包含模型 ID 用于后续查询名称
+		dto := &biz.AgentDTO{
 			ID:            a.ID,
 			AgentName:     a.AgentName,
+			TTSModelID:    a.TtsModelID,
+			LLMModelID:    a.LlmModelID,
+			VLLMModelID:   a.VllmModelID,
+			TTSVoiceID:    a.TtsVoiceID,
 			SystemPrompt:  a.SystemPrompt,
 			SummaryMemory: a.SummaryMemory,
 			MemModelID:    a.MemModelID,
 			DeviceCount:   int32(deviceCount),
-			// 注意：模型名称需要通过 ModelService 查询，这里先留空
-			// TTSModelName, TTSVoiceName, LLMModelName, VLLMModelName 需要关联查询
+			// 模型名称和音色名称将在 biz 层查询
 		}
+
+		result[i] = dto
 	}
 
 	return result, nil
@@ -786,6 +793,30 @@ func (r *agentRepo) GetDeviceCountByAgentID(ctx context.Context, agentId string)
 		return 0, err
 	}
 	return count, nil
+}
+
+// GetLatestLastConnectionTimeByAgentID 获取智能体的最后连接时间
+func (r *agentRepo) GetLatestLastConnectionTimeByAgentID(ctx context.Context, agentId string) (*time.Time, error) {
+	// 查询该智能体所有设备中最后连接时间的最大值
+	devices, err := r.data.db.Device.Query().
+		Where(device.AgentIDEQ(agentId)).
+		Order(ent.Desc(device.FieldLastConnectedAt)).
+		Limit(1).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(devices) == 0 {
+		return nil, nil
+	}
+
+	lastTime := devices[0].LastConnectedAt
+	if lastTime.IsZero() {
+		return nil, nil
+	}
+
+	return &lastTime, nil
 }
 
 // GetDefaultAgentByMacAddress 根据 MAC 地址获取默认智能体

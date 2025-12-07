@@ -44,9 +44,13 @@ type Agent struct {
 type AgentDTO struct {
 	ID              string
 	AgentName       string
+	TTSModelID      string // 内部使用，用于查询模型名称
 	TTSModelName    string
+	TTSVoiceID      string // 内部使用，用于查询音色名称
 	TTSVoiceName    string
+	LLMModelID      string // 内部使用，用于查询模型名称
 	LLMModelName    string
+	VLLMModelID     string // 内部使用，用于查询模型名称
 	VLLMModelName   string
 	MemModelID      string
 	SystemPrompt    string
@@ -165,32 +169,39 @@ type AgentRepo interface {
 	DeleteChatHistoryByAgentID(ctx context.Context, agentId string) error
 	DeleteAudioByAgentID(ctx context.Context, agentId string) error
 	GetDeviceCountByAgentID(ctx context.Context, agentId string) (int, error)
+	GetLatestLastConnectionTimeByAgentID(ctx context.Context, agentId string) (*time.Time, error)
 	GetDefaultAgentByMacAddress(ctx context.Context, macAddress string) (*Agent, error)
 	IsAudioOwnedByAgent(ctx context.Context, audioId, agentId string) (bool, error)
 }
 
 // AgentUsecase 智能体业务逻辑
 type AgentUsecase struct {
-	repo          AgentRepo
-	configUsecase *ConfigUsecase
-	redisClient   *kit.RedisClient
-	handleError   *cerrors.HandleError
-	log           *log.Helper
+	repo            AgentRepo
+	configUsecase   *ConfigUsecase
+	modelUsecase    *ModelUsecase
+	ttsVoiceUsecase *TtsVoiceUsecase
+	redisClient     *kit.RedisClient
+	handleError     *cerrors.HandleError
+	log             *log.Helper
 }
 
 // NewAgentUsecase 创建智能体用例
 func NewAgentUsecase(
 	repo AgentRepo,
 	configUsecase *ConfigUsecase,
+	modelUsecase *ModelUsecase,
+	ttsVoiceUsecase *TtsVoiceUsecase,
 	redisClient *kit.RedisClient,
 	logger log.Logger,
 ) *AgentUsecase {
 	return &AgentUsecase{
-		repo:          repo,
-		configUsecase: configUsecase,
-		redisClient:   redisClient,
-		handleError:   cerrors.NewHandleError(logger),
-		log:           kit.LogHelper(logger),
+		repo:            repo,
+		configUsecase:   configUsecase,
+		modelUsecase:    modelUsecase,
+		ttsVoiceUsecase: ttsVoiceUsecase,
+		redisClient:     redisClient,
+		handleError:     cerrors.NewHandleError(logger),
+		log:             kit.LogHelper(logger),
 	}
 }
 
@@ -206,7 +217,48 @@ func (uc *AgentUsecase) GenerateAgentCode() string {
 
 // ListUserAgents 获取用户智能体列表
 func (uc *AgentUsecase) ListUserAgents(ctx context.Context, userId int64) ([]*AgentDTO, error) {
-	return uc.repo.ListUserAgents(ctx, userId)
+	agents, err := uc.repo.ListUserAgents(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	// 关联查询模型名称、音色名称和最后连接时间
+	for _, agent := range agents {
+		// 获取 TTS 模型名称
+		if agent.TTSModelID != "" {
+			if config, err := uc.modelUsecase.GetModelConfigByID(ctx, agent.TTSModelID); err == nil && config != nil {
+				agent.TTSModelName = config.ModelName
+			}
+		}
+
+		// 获取 LLM 模型名称
+		if agent.LLMModelID != "" {
+			if config, err := uc.modelUsecase.GetModelConfigByID(ctx, agent.LLMModelID); err == nil && config != nil {
+				agent.LLMModelName = config.ModelName
+			}
+		}
+
+		// 获取 VLLM 模型名称
+		if agent.VLLMModelID != "" {
+			if config, err := uc.modelUsecase.GetModelConfigByID(ctx, agent.VLLMModelID); err == nil && config != nil {
+				agent.VLLMModelName = config.ModelName
+			}
+		}
+
+		// 获取 TTS 音色名称
+		if agent.TTSVoiceID != "" {
+			if voice, err := uc.ttsVoiceUsecase.GetTtsVoiceByID(ctx, agent.TTSVoiceID); err == nil && voice != nil {
+				agent.TTSVoiceName = voice.Name
+			}
+		}
+
+		// 获取最后连接时间
+		if lastTime, err := uc.repo.GetLatestLastConnectionTimeByAgentID(ctx, agent.ID); err == nil && lastTime != nil {
+			agent.LastConnectedAt = lastTime.Format("2006-01-02 15:04:05")
+		}
+	}
+
+	return agents, nil
 }
 
 // ListAllAgents 管理员列表（分页）
