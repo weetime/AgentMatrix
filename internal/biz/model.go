@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/weetime/agent-matrix/internal/kit"
 	"github.com/weetime/agent-matrix/internal/kit/cerrors"
 
@@ -77,8 +78,8 @@ type ModelConfigRepo interface {
 
 // ListModelProviderParams 查询模型供应器过滤条件
 type ListModelProviderParams struct {
-	ModelType *string // 可选，模型类型过滤
-	Name      *string // 可选，名称或providerCode模糊查询
+	ModelType *wrappers.StringValue // 可选，模型类型过滤
+	Name      *wrappers.StringValue // 可选，名称或providerCode模糊查询
 }
 
 // ModelProviderRepo 模型供应器数据访问接口

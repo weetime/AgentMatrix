@@ -608,14 +608,8 @@ func (s *ModelService) modelConfigToDTO(config *biz.ModelConfig) map[string]inte
 func (s *ModelService) PageModelProvider(ctx context.Context, req *pb.PageModelProviderRequest) (*pb.Response, error) {
 	// 解析过滤条件
 	params := &biz.ListModelProviderParams{}
-	if req.ModelType != nil && req.ModelType.GetValue() != "" {
-		modelType := req.ModelType.GetValue()
-		params.ModelType = &modelType
-	}
-	if req.Name != nil && req.Name.GetValue() != "" {
-		name := req.Name.GetValue()
-		params.Name = &name
-	}
+	params.ModelType = req.GetModelType()
+	params.Name = req.GetName()
 
 	// 解析分页参数
 	page := &kit.PageRequest{}

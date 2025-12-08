@@ -176,117 +176,27 @@ message GetPluginNamesRequest {
 
 // ModelService 模型配置管理服务
 service ModelService {
-  // GetModelNames 获取所有模型名称
-  rpc GetModelNames(GetModelNamesRequest) returns (Response) {
+
+  // ========== 静态路由（按路径长度和优先级排序）==========
+
+  // GetPluginNames 获取插件名称列表
+  rpc GetPluginNames(GetPluginNamesRequest) returns (Response) {
     option (google.api.http) = {
-      get: "/models/names"
+      get: "/models/provider/plugin/names"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "获取所有模型名称";
+      summary: "获取插件名称列表";
     };
   }
 
-  // GetLlmModelNames 获取LLM模型信息
-  rpc GetLlmModelNames(GetLlmModelNamesRequest) returns (Response) {
+  // DeleteModelProvider 删除模型供应器
+  rpc DeleteModelProvider(DeleteModelProviderRequest) returns (Response) {
     option (google.api.http) = {
-      get: "/models/llm/names"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "获取LLM模型信息";
-    };
-  }
-
-  // GetModelProviderList 获取模型供应器列表
-  rpc GetModelProviderList(GetModelProviderListRequest) returns (Response) {
-    option (google.api.http) = {
-      get: "/models/{model_type}/provideTypes"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "获取模型供应器列表";
-    };
-  }
-
-  // PageModelConfig 获取模型配置列表
-  rpc PageModelConfig(PageModelConfigRequest) returns (Response) {
-    option (google.api.http) = {
-      get: "/models/list"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "获取模型配置列表";
-    };
-  }
-
-  // AddModelConfig 新增模型配置
-  rpc AddModelConfig(AddModelConfigRequest) returns (Response) {
-    option (google.api.http) = {
-      post: "/models/{model_type}/{provide_code}"
-      body: "body"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "新增模型配置";
-    };
-  }
-
-  // EditModelConfig 编辑模型配置
-  rpc EditModelConfig(EditModelConfigRequest) returns (Response) {
-    option (google.api.http) = {
-      put: "/models/{model_type}/{provide_code}/{id}"
-      body: "body"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "编辑模型配置";
-    };
-  }
-
-  // DeleteModelConfig 删除模型配置
-  rpc DeleteModelConfig(DeleteModelConfigRequest) returns (Response) {
-    option (google.api.http) = {
-      delete: "/models/{id}"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "删除模型配置";
-    };
-  }
-
-  // GetModelConfig 获取模型配置
-  rpc GetModelConfig(GetModelConfigRequest) returns (Response) {
-    option (google.api.http) = {
-      get: "/models/{id}"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "获取模型配置";
-    };
-  }
-
-  // EnableModelConfig 启用/关闭模型
-  rpc EnableModelConfig(EnableModelConfigRequest) returns (Response) {
-    option (google.api.http) = {
-      put: "/models/enable/{id}/{status}"
+      post: "/models/provider/delete"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "启用/关闭模型配置";
-    };
-  }
-
-  // SetDefaultModel 设置默认模型
-  rpc SetDefaultModel(SetDefaultModelRequest) returns (Response) {
-    option (google.api.http) = {
-      put: "/models/default/{id}"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "设置默认模型";
-    };
-  }
-
-  // GetModelVoices 获取模型音色
-  rpc GetModelVoices(GetModelVoicesRequest) returns (Response) {
-    option (google.api.http) = {
-      get: "/models/{model_id}/voices"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "获取模型音色";
+      summary: "删除模型供应器";
     };
   }
 
@@ -322,24 +232,119 @@ service ModelService {
     };
   }
 
-  // DeleteModelProvider 删除模型供应器
-  rpc DeleteModelProvider(DeleteModelProviderRequest) returns (Response) {
+  // EnableModelConfig 启用/关闭模型
+  rpc EnableModelConfig(EnableModelConfigRequest) returns (Response) {
     option (google.api.http) = {
-      post: "/models/provider/delete"
+      put: "/models/enable/{id}/{status}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "删除模型供应器";
+      summary: "启用/关闭模型配置";
     };
   }
 
-  // GetPluginNames 获取插件名称列表
-  rpc GetPluginNames(GetPluginNamesRequest) returns (Response) {
+  // SetDefaultModel 设置默认模型
+  rpc SetDefaultModel(SetDefaultModelRequest) returns (Response) {
     option (google.api.http) = {
-      get: "/models/provider/plugin/names"
+      put: "/models/default/{id}"
+      body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "获取插件名称列表";
+      summary: "设置默认模型";
+    };
+  }
+
+  // GetLlmModelNames 获取LLM模型信息
+  rpc GetLlmModelNames(GetLlmModelNamesRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/llm/names"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取LLM模型信息";
+    };
+  }
+
+  // GetModelNames 获取所有模型名称
+  rpc GetModelNames(GetModelNamesRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/names"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取所有模型名称";
+    };
+  }
+
+  // PageModelConfig 获取模型配置列表
+  rpc PageModelConfig(PageModelConfigRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/list"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取模型配置列表";
+    };
+  }
+
+  // ========== 动态路由（放在静态路由之后）==========
+
+  // GetModelVoices 获取模型音色
+  rpc GetModelVoices(GetModelVoicesRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/{model_id}/voices"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取模型音色";
+    };
+  }
+
+  // GetModelProviderList 获取模型供应器列表
+  rpc GetModelProviderList(GetModelProviderListRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/{model_type}/provideTypes"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取模型供应器列表";
+    };
+  }
+
+  // EditModelConfig 编辑模型配置
+  rpc EditModelConfig(EditModelConfigRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/models/{model_type}/{provide_code}/{id}"
+      body: "body"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "编辑模型配置";
+    };
+  }
+
+  // AddModelConfig 新增模型配置
+  rpc AddModelConfig(AddModelConfigRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/models/{model_type}/{provide_code}"
+      body: "body"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "新增模型配置";
+    };
+  }
+
+  // GetModelConfig 获取模型配置（GET方法，放在DELETE之前）
+  rpc GetModelConfig(GetModelConfigRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/models/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取模型配置";
+    };
+  }
+
+  // DeleteModelConfig 删除模型配置
+  rpc DeleteModelConfig(DeleteModelConfigRequest) returns (Response) {
+    option (google.api.http) = {
+      delete: "/models/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除模型配置";
     };
   }
 }

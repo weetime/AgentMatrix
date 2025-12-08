@@ -465,16 +465,16 @@ func (r *modelProviderRepo) applyModelProviderFilters(query *ent.ModelProviderQu
 	}
 
 	// modelType精确匹配
-	if params.ModelType != nil && *params.ModelType != "" {
-		query = query.Where(modelprovider.ModelTypeEQ(*params.ModelType))
+	if params.ModelType != nil {
+		query = query.Where(modelprovider.ModelTypeEQ(params.ModelType.GetValue()))
 	}
 
 	// name模糊查询name或provider_code字段（使用OR条件）
-	if params.Name != nil && *params.Name != "" {
+	if params.Name != nil {
 		query = query.Where(
 			modelprovider.Or(
-				modelprovider.NameContains(*params.Name),
-				modelprovider.ProviderCodeContains(*params.Name),
+				modelprovider.NameContains(params.Name.GetValue()),
+				modelprovider.ProviderCodeContains(params.Name.GetValue()),
 			),
 		)
 	}
