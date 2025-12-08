@@ -280,11 +280,11 @@
 **目标**: 系统参数、字典、用户管理
 
 **管理员管理**:
-| 76 | GET | `/admin/users` | 分页查找用户 | 超级管理员 | 0.5天 |
-| 77 | PUT | `/admin/users/{id}` | 重置密码 | 超级管理员 | 0.5天 |
-| 78 | DELETE | `/admin/users/{id}` | 删除用户 | 超级管理员 | 0.5天 |
-| 79 | PUT | `/admin/users/changeStatus/{status}` | 批量修改用户状态 | 超级管理员 | 0.5天 |
-| 80 | GET | `/admin/device/all` | 分页查找设备 | 超级管理员 | 0.5天 |
+| 76 | GET | `/admin/users` | 分页查找用户 | 超级管理员 | 0.5天 | ✅ 已完成 
+| 77 | PUT | `/admin/users/{id}` | 重置密码 | 超级管理员 | 0.5天 | ✅ 已完成 
+| 78 | DELETE | `/admin/users/{id}` | 删除用户 | 超级管理员 | 0.5天 | ✅ 已完成 
+| 79 | PUT | `/admin/users/changeStatus/{status}` | 批量修改用户状态 | 超级管理员 | 0.5 天 | ✅ 已完成 
+| 80 | GET | `/admin/device/all` | 分页查找设备 | 超级管理员 | 0.5天 | ✅ 已废弃不用实现 
 
 **字典类型管理**:
 | 81 | GET | `/admin/dict/type/page` | 分页查询字典类型 | 超级管理员 | 0.5天 | ✅ 已完成 |

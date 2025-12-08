@@ -33,13 +33,6 @@ message ChangeUserStatusRequest {
   repeated string user_ids = 2;  // 用户ID数组（请求体）
 }
 
-// PageAdminDevicesRequest 分页查询设备请求
-message PageAdminDevicesRequest {
-  google.protobuf.StringValue keywords = 1;  // 可选，设备关键词
-  int64 page = 2;  // 页码，从1开始
-  int64 limit = 3;  // 每页数量，默认10
-}
-
 // AdminService 管理员管理服务
 service AdminService {
   // ========== 静态路由（按路径长度和优先级排序）==========
@@ -62,16 +55,6 @@ service AdminService {
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "分页查找用户";
-    };
-  }
-
-  // PageAdminDevices 分页查找设备
-  rpc PageAdminDevices(PageAdminDevicesRequest) returns (Response) {
-    option (google.api.http) = {
-      get: "/admin/device/all"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "分页查找设备";
     };
   }
 

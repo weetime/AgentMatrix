@@ -13,20 +13,14 @@ import (
 
 type AdminService struct {
 	pb.UnimplementedAdminServiceServer
-	userUsecase   *biz.UserUsecase
-	deviceUsecase *biz.DeviceUsecase
-	userRepo      biz.UserRepo
+	userUsecase *biz.UserUsecase
 }
 
 func NewAdminService(
 	userUsecase *biz.UserUsecase,
-	deviceUsecase *biz.DeviceUsecase,
-	userRepo biz.UserRepo,
 ) *AdminService {
 	return &AdminService{
-		userUsecase:   userUsecase,
-		deviceUsecase: deviceUsecase,
-		userRepo:      userRepo,
+		userUsecase: userUsecase,
 	}
 }
 
@@ -187,96 +181,3 @@ func (s *AdminService) ChangeUserStatus(ctx context.Context, req *pb.ChangeUserS
 		Msg:  "success",
 	}, nil
 }
-
-// userRepoAdapter 适配器，将biz.UserRepo转换为biz.AdminUserRepo
-type userRepoAdapter struct {
-	repo biz.UserRepo
-}
-
-func (a *userRepoAdapter) GetUsersByIDs(ctx context.Context, userIds []int64) (map[int64]*biz.AdminUser, error) {
-	users, err := a.repo.GetUsersByIDs(ctx, userIds)
-	if err != nil {
-		return nil, err
-	}
-	result := make(map[int64]*biz.AdminUser, len(users))
-	for userId, user := range users {
-		result[userId] = &biz.AdminUser{
-			ID:       user.ID,
-			Username: user.Username,
-		}
-	}
-	return result, nil
-}
-
-// PageAdminDevices 分页查找设备
-func (s *AdminService) PageAdminDevices(ctx context.Context, req *pb.PageAdminDevicesRequest) (*pb.Response, error) {
-	// 解析过滤条件
-	var keywords *string
-	if req.Keywords != nil && req.Keywords.GetValue() != "" {
-		k := req.Keywords.GetValue()
-		keywords = &k
-	}
-
-	// 解析分页参数
-	page := &kit.PageRequest{}
-	pageNo := req.GetPage()
-	if pageNo == 0 {
-		pageNo = 1
-	}
-	pageSize := req.GetLimit()
-	if pageSize == 0 {
-		pageSize = kit.DEFAULT_PAGE_ZISE
-	}
-	page.SetPageNo(int(pageNo))
-	page.SetPageSize(int(pageSize))
-	page.SetSortDesc()
-	page.SetSortField("mac_address")
-
-	// 创建适配器
-	userRepoAdapter := &userRepoAdapter{repo: s.userRepo}
-
-	// 查询列表
-	list, total, err := s.deviceUsecase.PageAdminDevices(ctx, keywords, page, userRepoAdapter)
-	if err != nil {
-		return &pb.Response{
-			Code: 500,
-			Msg:  err.Error(),
-		}, nil
-	}
-
-	// 转换为VO列表
-	voList := make([]interface{}, 0, len(list))
-	for _, item := range list {
-		vo := map[string]interface{}{
-			"id":             item.ID,
-			"macAddress":     item.MacAddress,
-			"bindUserName":   item.BindUserName,
-			"deviceType":     item.DeviceType,
-			"appVersion":     item.AppVersion,
-			"otaUpgrade":     item.OtaUpgrade,
-			"recentChatTime": item.RecentChatTime,
-		}
-		voList = append(voList, vo)
-	}
-
-	// 构建响应数据
-	data := map[string]interface{}{
-		"total": int32(total),
-		"list":  voList,
-	}
-
-	dataStruct, err := structpb.NewStruct(data)
-	if err != nil {
-		return &pb.Response{
-			Code: 500,
-			Msg:  "构建响应数据失败: " + err.Error(),
-		}, nil
-	}
-
-	return &pb.Response{
-		Code: 0,
-		Msg:  "success",
-		Data: dataStruct,
-	}, nil
-}
-
