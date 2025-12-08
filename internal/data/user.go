@@ -177,6 +177,68 @@ func (r *userRepo) GetUsersByIDs(ctx context.Context, userIds []int64) (map[int6
 	return result, nil
 }
 
+// PageUsers 分页查询用户，支持按手机号模糊查询
+func (r *userRepo) PageUsers(ctx context.Context, mobile *string, page *kit.PageRequest) ([]*biz.User, error) {
+	query := r.data.db.SysUser.Query()
+
+	// 如果提供了手机号，进行模糊查询
+	if mobile != nil && *mobile != "" {
+		query = query.Where(sysuser.UsernameContains(*mobile))
+	}
+
+	// 默认按ID降序排序
+	if page == nil || page.GetSortField() == "" {
+		page = &kit.PageRequest{}
+		page.SetSortField("id")
+		page.SetSortDesc()
+	}
+
+	applyPagination(query, page, sysuser.Columns)
+
+	users, err := query.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*biz.User, len(users))
+	for i, user := range users {
+		var bizUser biz.User
+		if err := copier.Copy(&bizUser, user); err != nil {
+			return nil, err
+		}
+		result[i] = &bizUser
+	}
+
+	return result, nil
+}
+
+// TotalUsers 获取用户总数（支持按手机号过滤）
+func (r *userRepo) TotalUsers(ctx context.Context, mobile *string) (int, error) {
+	query := r.data.db.SysUser.Query()
+
+	if mobile != nil && *mobile != "" {
+		query = query.Where(sysuser.UsernameContains(*mobile))
+	}
+
+	return query.Count(ctx)
+}
+
+// DeleteUserById 删除用户
+func (r *userRepo) DeleteUserById(ctx context.Context, userId int64) error {
+	_, err := r.data.db.SysUser.Delete().
+		Where(sysuser.ID(userId)).
+		Exec(ctx)
+	return err
+}
+
+// UpdateUserStatus 更新用户状态
+func (r *userRepo) UpdateUserStatus(ctx context.Context, userId int64, status int32) error {
+	return r.data.db.SysUser.Update().
+		Where(sysuser.ID(userId)).
+		SetStatus(status).
+		Exec(ctx)
+}
+
 // GetByUserId 根据用户ID获取Token
 func (r *userTokenRepo) GetByUserId(ctx context.Context, userId int64) (*biz.UserToken, error) {
 	token, err := r.data.db.SysUserToken.Query().

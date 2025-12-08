@@ -1,8 +1,6 @@
 package service
 
 import (
-	pb "github.com/weetime/agent-matrix/protos/v1"
-
 	"github.com/google/wire"
 )
 
@@ -18,6 +16,5 @@ var ProviderSet = wire.NewSet(
 	NewDeviceService,
 	NewModelService,
 	NewTtsVoiceService,
+	NewAdminService,
 )
-
-var pbErrorInvalidUUID = pb.ErrorInvalidArgument("uuid is invalid")

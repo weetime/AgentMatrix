@@ -21,6 +21,7 @@ func NewGRPCServer(c *conf.Bootstrap,
 	sysParams *service.SysParamsService,
 	agent *service.AgentService,
 	device *service.DeviceService,
+	admin *service.AdminService,
 	logger log.Logger,
 ) *grpc.Server {
 
@@ -47,5 +48,6 @@ func NewGRPCServer(c *conf.Bootstrap,
 	v1.RegisterSysParamsServiceServer(srv, sysParams)
 	v1.RegisterAgentServiceServer(srv, agent)
 	v1.RegisterDeviceServiceServer(srv, device)
+	v1.RegisterAdminServiceServer(srv, admin)
 	return srv
 }

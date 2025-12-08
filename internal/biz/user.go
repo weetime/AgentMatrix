@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/weetime/agent-matrix/internal/kit"
@@ -62,6 +63,10 @@ type UserRepo interface {
 	GetUserCount(ctx context.Context) (int64, error)
 	GetAllowUserRegister(ctx context.Context) (bool, error)
 	GetUsersByIDs(ctx context.Context, userIds []int64) (map[int64]*User, error)
+	PageUsers(ctx context.Context, mobile *string, page *kit.PageRequest) ([]*User, error)
+	TotalUsers(ctx context.Context, mobile *string) (int, error)
+	DeleteUserById(ctx context.Context, userId int64) error
+	UpdateUserStatus(ctx context.Context, userId int64, status int32) error
 }
 
 // UserTokenRepo Token数据访问接口
@@ -91,6 +96,8 @@ type UserUsecase struct {
 	tokenRepo      UserTokenRepo
 	paramsService  ParamsService
 	captchaService CaptchaService
+	deviceRepo     DeviceRepo
+	agentRepo      AgentRepo
 	handleError    *cerrors.HandleError
 	log            *log.Helper
 }
@@ -101,6 +108,8 @@ func NewUserUsecase(
 	tokenRepo UserTokenRepo,
 	paramsService ParamsService,
 	captchaService CaptchaService,
+	deviceRepo DeviceRepo,
+	agentRepo AgentRepo,
 	logger log.Logger,
 ) *UserUsecase {
 	return &UserUsecase{
@@ -108,6 +117,8 @@ func NewUserUsecase(
 		tokenRepo:      tokenRepo,
 		paramsService:  paramsService,
 		captchaService: captchaService,
+		deviceRepo:     deviceRepo,
+		agentRepo:      agentRepo,
 		handleError:    cerrors.NewHandleError(logger),
 		log:            kit.LogHelper(logger),
 	}
@@ -486,6 +497,120 @@ func (uc *UserUsecase) GetUserByToken(ctx context.Context, token string) (*middl
 		Status:     user.Status,
 		Token:      token,
 	}, nil
+}
+
+// AdminPageUserVO 管理员分页用户VO
+type AdminPageUserVO struct {
+	UserID      string    `json:"userid"`
+	Mobile      string    `json:"mobile"`
+	DeviceCount string    `json:"deviceCount"`
+	Status      int32     `json:"status"`
+	CreateDate  time.Time `json:"createDate"`
+}
+
+// PageAdminUsers 管理员分页查询用户
+func (uc *UserUsecase) PageAdminUsers(ctx context.Context, mobile *string, page *kit.PageRequest) ([]*AdminPageUserVO, int, error) {
+	// 查询用户列表
+	users, err := uc.userRepo.PageUsers(ctx, mobile, page)
+	if err != nil {
+		return nil, 0, uc.handleError.ErrInternal(ctx, err)
+	}
+
+	// 查询总数
+	total, err := uc.userRepo.TotalUsers(ctx, mobile)
+	if err != nil {
+		return nil, 0, uc.handleError.ErrInternal(ctx, err)
+	}
+
+	// 批量查询设备数量
+	userIds := make([]int64, len(users))
+	for i, user := range users {
+		userIds[i] = user.ID
+	}
+
+	deviceCountMap := make(map[int64]int64)
+	for _, userId := range userIds {
+		count, err := uc.deviceRepo.SelectCountByUserId(ctx, userId)
+		if err != nil {
+			uc.log.Warnf("Failed to get device count for user %d: %v", userId, err)
+			deviceCountMap[userId] = 0
+		} else {
+			deviceCountMap[userId] = count
+		}
+	}
+
+	// 转换为VO
+	voList := make([]*AdminPageUserVO, len(users))
+	for i, user := range users {
+		voList[i] = &AdminPageUserVO{
+			UserID:      fmt.Sprintf("%d", user.ID),
+			Mobile:      user.Username,
+			DeviceCount: fmt.Sprintf("%d", deviceCountMap[user.ID]),
+			Status:      user.Status,
+			CreateDate:  user.CreateDate,
+		}
+	}
+
+	return voList, total, nil
+}
+
+// ResetPassword 重置用户密码
+func (uc *UserUsecase) ResetPassword(ctx context.Context, userId int64) (string, error) {
+	// 生成随机密码
+	password := kit.GenerateRandomPassword()
+
+	// 加密密码
+	hashedPassword, err := kit.HashPassword(password)
+	if err != nil {
+		return "", uc.handleError.ErrInternal(ctx, err)
+	}
+
+	// 更新密码
+	err = uc.userRepo.ChangePasswordDirectly(ctx, userId, hashedPassword)
+	if err != nil {
+		return "", uc.handleError.ErrInternal(ctx, err)
+	}
+
+	return password, nil
+}
+
+// DeleteUserById 删除用户（级联删除设备和智能体）
+func (uc *UserUsecase) DeleteUserById(ctx context.Context, userId int64) error {
+	// 删除设备
+	if err := uc.deviceRepo.DeleteByUserId(ctx, userId); err != nil {
+		uc.log.Warnf("Failed to delete devices for user %d: %v", userId, err)
+		// 继续执行，不中断删除流程
+	}
+
+	// 删除智能体
+	if err := uc.agentRepo.DeleteAgentsByUserId(ctx, userId); err != nil {
+		uc.log.Warnf("Failed to delete agents for user %d: %v", userId, err)
+		// 继续执行，不中断删除流程
+	}
+
+	// 删除用户
+	if err := uc.userRepo.DeleteUserById(ctx, userId); err != nil {
+		return uc.handleError.ErrInternal(ctx, err)
+	}
+
+	return nil
+}
+
+// ChangeUserStatus 批量修改用户状态
+func (uc *UserUsecase) ChangeUserStatus(ctx context.Context, status int32, userIds []string) error {
+	for _, userIdStr := range userIds {
+		userId, err := strconv.ParseInt(userIdStr, 10, 64)
+		if err != nil {
+			uc.log.Warnf("Invalid user ID: %s", userIdStr)
+			continue
+		}
+
+		if err := uc.userRepo.UpdateUserStatus(ctx, userId, status); err != nil {
+			return uc.handleError.ErrInternal(ctx, fmt.Errorf("failed to update user %d status: %w", userId, err))
+		}
+	}
+
+	return nil
 }
 
 // captchaServiceWrapper 验证码服务包装器

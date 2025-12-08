@@ -299,6 +299,63 @@ func (r *agentRepo) DeleteAgent(ctx context.Context, id string) error {
 	return err
 }
 
+// DeleteAgentsByUserId 删除用户的所有智能体
+func (r *agentRepo) DeleteAgentsByUserId(ctx context.Context, userId int64) error {
+	// 先查询该用户的所有智能体ID
+	agents, err := r.data.db.Agent.Query().
+		Where(agent.UserIDEQ(userId)).
+		Select(agent.FieldID).
+		All(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(agents) == 0 {
+		return nil
+	}
+
+	agentIDs := make([]string, len(agents))
+	for i, a := range agents {
+		agentIDs[i] = a.ID
+	}
+
+	// 删除聊天记录
+	_, err = r.data.db.AgentChatHistory.Delete().
+		Where(agentchathistory.AgentIDIn(agentIDs...)).
+		Exec(ctx)
+	if err != nil {
+		r.log.Warnf("Failed to delete chat history for user %d: %v", userId, err)
+	}
+
+	// 删除音频数据
+	histories, err := r.data.db.AgentChatHistory.Query().
+		Where(agentchathistory.AgentIDIn(agentIDs...)).
+		Select(agentchathistory.FieldAudioID).
+		All(ctx)
+	if err == nil {
+		audioIDs := make([]string, 0)
+		for _, h := range histories {
+			if h.AudioID != "" {
+				audioIDs = append(audioIDs, h.AudioID)
+			}
+		}
+		if len(audioIDs) > 0 {
+			_, err = r.data.db.AgentChatAudio.Delete().
+				Where(agentchataudio.IDIn(audioIDs...)).
+				Exec(ctx)
+			if err != nil {
+				r.log.Warnf("Failed to delete audio for user %d: %v", userId, err)
+			}
+		}
+	}
+
+	// 删除智能体
+	_, err = r.data.db.Agent.Delete().
+		Where(agent.UserIDEQ(userId)).
+		Exec(ctx)
+	return err
+}
+
 // GetAgentTemplateList 模板列表
 func (r *agentRepo) GetAgentTemplateList(ctx context.Context) ([]*biz.AgentTemplate, error) {
 	templates, err := r.data.db.AgentTemplate.Query().

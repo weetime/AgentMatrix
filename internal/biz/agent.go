@@ -172,6 +172,7 @@ type AgentRepo interface {
 	GetLatestLastConnectionTimeByAgentID(ctx context.Context, agentId string) (*time.Time, error)
 	GetDefaultAgentByMacAddress(ctx context.Context, macAddress string) (*Agent, error)
 	IsAudioOwnedByAgent(ctx context.Context, audioId, agentId string) (bool, error)
+	DeleteAgentsByUserId(ctx context.Context, userId int64) error
 }
 
 // AgentUsecase 智能体业务逻辑

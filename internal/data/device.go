@@ -6,6 +6,7 @@ import (
 	"github.com/weetime/agent-matrix/internal/biz"
 	"github.com/weetime/agent-matrix/internal/data/ent"
 	"github.com/weetime/agent-matrix/internal/data/ent/device"
+	"github.com/weetime/agent-matrix/internal/kit"
 
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -181,4 +182,62 @@ func (r *deviceRepo) toBizDevice(entity *ent.Device) *biz.Device {
 	}
 
 	return d
+}
+
+// SelectCountByUserId 获取用户的设备数量
+func (r *deviceRepo) SelectCountByUserId(ctx context.Context, userId int64) (int64, error) {
+	count, err := r.data.db.Device.Query().
+		Where(device.UserIDEQ(userId)).
+		Count(ctx)
+	return int64(count), err
+}
+
+// DeleteByUserId 删除用户的所有设备
+func (r *deviceRepo) DeleteByUserId(ctx context.Context, userId int64) error {
+	_, err := r.data.db.Device.Delete().
+		Where(device.UserIDEQ(userId)).
+		Exec(ctx)
+	return err
+}
+
+// PageDevices 分页查询所有设备，支持按别名模糊查询
+func (r *deviceRepo) PageDevices(ctx context.Context, keywords *string, page *kit.PageRequest) ([]*biz.Device, error) {
+	query := r.data.db.Device.Query()
+
+	// 如果提供了关键词，进行模糊查询
+	if keywords != nil && *keywords != "" {
+		query = query.Where(device.AliasContains(*keywords))
+	}
+
+	// 默认按mac_address降序排序
+	if page == nil || page.GetSortField() == "" {
+		page = &kit.PageRequest{}
+		page.SetSortField("mac_address")
+		page.SetSortDesc()
+	}
+
+	applyPagination(query, page, device.Columns)
+
+	devices, err := query.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*biz.Device, len(devices))
+	for i, device := range devices {
+		result[i] = r.toBizDevice(device)
+	}
+
+	return result, nil
+}
+
+// TotalDevices 获取设备总数（支持按关键词过滤）
+func (r *deviceRepo) TotalDevices(ctx context.Context, keywords *string) (int, error) {
+	query := r.data.db.Device.Query()
+
+	if keywords != nil && *keywords != "" {
+		query = query.Where(device.AliasContains(*keywords))
+	}
+
+	return query.Count(ctx)
 }

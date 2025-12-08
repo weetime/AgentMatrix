@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
+
+import "protos/v1/agentmatrix.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/wrappers.proto";
+import "validate/validate.proto";
+
+// PageAdminUsersRequest 分页查询用户请求
+message PageAdminUsersRequest {
+  google.protobuf.StringValue mobile = 1;  // 可选，用户手机号码
+  int64 page = 2;  // 页码，从1开始
+  int64 limit = 3;  // 每页数量，默认10
+}
+
+// ResetUserPasswordRequest 重置用户密码请求
+message ResetUserPasswordRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];  // 用户ID（路径参数）
+}
+
+// DeleteUserRequest 删除用户请求
+message DeleteUserRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];  // 用户ID（路径参数）
+}
+
+// ChangeUserStatusRequest 批量修改用户状态请求
+message ChangeUserStatusRequest {
+  int32 status = 1 [(validate.rules).int32 = {in: [0, 1]}];  // 用户状态（路径参数），0或1
+  repeated string user_ids = 2;  // 用户ID数组（请求体）
+}
+
+// PageAdminDevicesRequest 分页查询设备请求
+message PageAdminDevicesRequest {
+  google.protobuf.StringValue keywords = 1;  // 可选，设备关键词
+  int64 page = 2;  // 页码，从1开始
+  int64 limit = 3;  // 每页数量，默认10
+}
+
+// AdminService 管理员管理服务
+service AdminService {
+  // ========== 静态路由（按路径长度和优先级排序）==========
+
+  // ChangeUserStatus 批量修改用户状态
+  rpc ChangeUserStatus(ChangeUserStatusRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/admin/users/changeStatus/{status}"
+      body: "user_ids"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "批量修改用户状态";
+    };
+  }
+
+  // PageAdminUsers 分页查找用户
+  rpc PageAdminUsers(PageAdminUsersRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/admin/users"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "分页查找用户";
+    };
+  }
+
+  // PageAdminDevices 分页查找设备
+  rpc PageAdminDevices(PageAdminDevicesRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/admin/device/all"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "分页查找设备";
+    };
+  }
+
+  // ========== 动态路由（放在静态路由之后）==========
+
+  // ResetUserPassword 重置用户密码
+  rpc ResetUserPassword(ResetUserPasswordRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/admin/users/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "重置用户密码";
+    };
+  }
+
+  // DeleteUser 删除用户
+  rpc DeleteUser(DeleteUserRequest) returns (Response) {
+    option (google.api.http) = {
+      delete: "/admin/users/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除用户";
+    };
+  }
+}
+
