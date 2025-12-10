@@ -22,3 +22,4 @@ __debug_bin*
 # Snyk Security Extension - AI Rules (auto-generated)
 .cursor/rules/snyk_rules.mdc
 config/config.dev.yaml
+uploadfile/

@@ -15,18 +15,21 @@ import (
 )
 
 type OtaService struct {
-	uc          *biz.OtaUsecase
-	redisClient *kit.RedisClient
+	uc           *biz.OtaUsecase
+	redisClient  *kit.RedisClient
+	tokenService middleware.TokenService
 	pb.UnimplementedOtaServiceServer
 }
 
 func NewOtaService(
 	uc *biz.OtaUsecase,
 	redisClient *kit.RedisClient,
+	tokenService middleware.TokenService,
 ) *OtaService {
 	return &OtaService{
-		uc:          uc,
-		redisClient: redisClient,
+		uc:           uc,
+		redisClient:  redisClient,
+		tokenService: tokenService,
 	}
 }
 

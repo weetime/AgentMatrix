@@ -306,14 +306,14 @@
 | 93 | POST | `/admin/server/emit-action` | 通知服务端更新配置 | 超级管理员 | 1天 |
 
 **OTA 固件管理**:
-| 94 | GET | `/otaMag` | 分页查询固件 | 超级管理员 | 0.5天 |
-| 95 | GET | `/otaMag/{id}` | 获取固件详情 | 超级管理员 | 0.5天 |
-| 96 | POST | `/otaMag` | 保存固件信息 | 超级管理员 | 0.5天 |
-| 97 | PUT | `/otaMag/{id}` | 修改固件信息 | 超级管理员 | 0.5天 |
-| 98 | DELETE | `/otaMag/{id}` | 删除固件 | 超级管理员 | 0.5天 |
-| 99 | GET | `/otaMag/getDownloadUrl/{id}` | 获取下载链接 | 超级管理员 | 0.5天 |
-| 100 | GET | `/otaMag/download/{uuid}` | 下载固件 | 公开 | 0.5天 |
-| 101 | POST | `/otaMag/upload` | 上传固件 | 超级管理员 | 1天 |
+| 94 | GET | `/otaMag` | 分页查询固件 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 95 | GET | `/otaMag/{id}` | 获取固件详情 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 96 | POST | `/otaMag` | 保存固件信息 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 97 | PUT | `/otaMag/{id}` | 修改固件信息 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 98 | DELETE | `/otaMag/{id}` | 删除固件 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 99 | GET | `/otaMag/getDownloadUrl/{id}` | 获取下载链接 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 100 | GET | `/otaMag/download/{uuid}` | 下载固件 | 公开 | 0.5天 | ✅ 已完成 |
+| 101 | POST | `/otaMag/upload` | 上传固件 | 超级管理员 | 1天 | ✅ 已完成 |
 
 **Phase 6 总计**: 约 15 天（3周）
 

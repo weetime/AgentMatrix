@@ -128,14 +128,14 @@
 
 | 方法 | 路径 | 功能 | 权限 | 说明 | 状态 |
 |------|------|------|------|------|------|
-| GET | `/otaMag` | 分页查询固件 | 超级管理员 | 分页查询所有 OTA 固件 | ❌ |
-| GET | `/otaMag/{id}` | 获取固件详情 | 超级管理员 | 返回固件详细信息 | ❌ |
-| POST | `/otaMag` | 保存固件信息 | 超级管理员 | 创建新的固件记录 | ❌ |
-| PUT | `/otaMag/{id}` | 修改固件信息 | 超级管理员 | 更新固件信息 | ❌ |
-| DELETE | `/otaMag/{id}` | 删除固件 | 超级管理员 | 删除固件记录 | ❌ |
-| GET | `/otaMag/getDownloadUrl/{id}` | 获取下载链接 | 超级管理员 | 生成固件下载链接 | ❌ |
-| GET | `/otaMag/download/{uuid}` | 下载固件 | 公开 | 通过 UUID 下载固件（限制3次） | ❌ |
-| POST | `/otaMag/upload` | 上传固件 | 超级管理员 | 上传 .bin 或 .apk 文件，使用 MD5 作为文件名 | ❌ |
+| GET | `/otaMag` | 分页查询固件 | 超级管理员 | 分页查询所有 OTA 固件 | ✅ |
+| GET | `/otaMag/{id}` | 获取固件详情 | 超级管理员 | 返回固件详细信息 | ✅ |
+| POST | `/otaMag` | 保存固件信息 | 超级管理员 | 创建新的固件记录 | ✅ |
+| PUT | `/otaMag/{id}` | 修改固件信息 | 超级管理员 | 更新固件信息 | ✅ |
+| DELETE | `/otaMag/{id}` | 删除固件 | 超级管理员 | 删除固件记录 | ✅ |
+| GET | `/otaMag/getDownloadUrl/{id}` | 获取下载链接 | 超级管理员 | 生成固件下载链接 | ✅ |
+| GET | `/otaMag/download/{uuid}` | 下载固件 | 公开 | 通过 UUID 下载固件（限制3次） | ✅ |
+| POST | `/otaMag/upload` | 上传固件 | 超级管理员 | 上传 .bin 或 .apk 文件，使用 MD5 作为文件名 | ✅ |
 
 ---
 

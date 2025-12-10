@@ -8,14 +8,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/weetime/agent-matrix/internal/constant"
 	"github.com/weetime/agent-matrix/internal/kit"
 	pb "github.com/weetime/agent-matrix/protos/v1"
 
 	kratoshttp "github.com/go-kratos/kratos/v2/transport/http"
-)
-
-const (
-	maxUploadSize = 10 * 1024 * 1024 // 10MB
 )
 
 // UploadVoiceHandler 处理文件上传的HTTP handler
@@ -38,7 +35,7 @@ func (s *VoiceCloneService) UploadVoiceHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	// 解析multipart/form-data
-	err := r.ParseMultipartForm(maxUploadSize)
+	err := r.ParseMultipartForm(constant.MaxUploadSize)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("解析表单失败: %v", err), http.StatusBadRequest)
 		return
@@ -67,8 +64,8 @@ func (s *VoiceCloneService) UploadVoiceHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	// 验证文件大小
-	if header.Size > maxUploadSize {
-		http.Error(w, fmt.Sprintf("文件大小超过限制，最大允许%dMB", maxUploadSize/(1024*1024)), http.StatusBadRequest)
+	if header.Size > constant.MaxUploadSize {
+		http.Error(w, fmt.Sprintf("文件大小超过限制，最大允许%dMB", constant.MaxUploadSize/(1024*1024)), http.StatusBadRequest)
 		return
 	}
 
