@@ -1,0 +1,149 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
+
+import "protos/v1/agentmatrix.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
+import "validate/validate.proto";
+
+// PageOtaRequest 分页查询OTA固件请求
+message PageOtaRequest {
+  google.protobuf.StringValue firmware_name = 1;  // 可选，固件名称（模糊查询）
+  int64 page = 2;  // 页码，从1开始，默认1（兼容参数名：page）
+  int64 limit = 3; // 每页数量，默认10（兼容参数名：limit）
+}
+
+// GetOtaRequest 获取OTA固件详情请求
+message GetOtaRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];  // OTA固件ID（路径参数）
+}
+
+// SaveOtaRequest 保存OTA固件信息请求
+message SaveOtaRequest {
+  string firmware_name = 1 [(validate.rules).string.min_len = 1];  // 固件名称（必填）
+  string type = 2 [(validate.rules).string.min_len = 1];  // 固件类型（必填）
+  string version = 3 [(validate.rules).string.min_len = 1];  // 版本号（必填）
+  int64 size = 4;  // 文件大小(字节)
+  string remark = 5;  // 备注/说明
+  string firmware_path = 6;  // 固件路径
+  int32 sort = 7;  // 排序
+}
+
+// UpdateOtaRequest 修改OTA固件信息请求
+message UpdateOtaRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];  // OTA固件ID（路径参数）
+  string firmware_name = 2 [(validate.rules).string.min_len = 1];  // 固件名称（必填）
+  string type = 3 [(validate.rules).string.min_len = 1];  // 固件类型（必填）
+  string version = 4 [(validate.rules).string.min_len = 1];  // 版本号（必填）
+  int64 size = 5;  // 文件大小(字节)
+  string remark = 6;  // 备注/说明
+  string firmware_path = 7;  // 固件路径
+  int32 sort = 8;  // 排序
+}
+
+// DeleteOtaRequest 删除OTA固件请求
+message DeleteOtaRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];  // OTA固件ID（路径参数）
+}
+
+// GetDownloadUrlRequest 获取下载链接请求
+message GetDownloadUrlRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];  // OTA固件ID（路径参数）
+}
+
+// DownloadOtaRequest 下载固件请求
+message DownloadOtaRequest {
+  string uuid = 1 [(validate.rules).string.min_len = 1];  // UUID（路径参数）
+}
+
+// OtaService OTA固件管理服务
+service OtaService {
+  // DownloadOta 下载固件（公开接口，静态路由放在前面）
+  rpc DownloadOta(DownloadOtaRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/otaMag/download/{uuid}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "下载固件";
+    };
+  }
+
+  // UploadFirmware 上传固件（静态路由放在前面）
+  // 注意：文件上传需要通过HTTP handler处理multipart/form-data
+  rpc UploadFirmware(google.protobuf.Empty) returns (Response) {
+    option (google.api.http) = {
+      post: "/otaMag/upload"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "上传固件";
+    };
+  }
+
+  // PageOta 分页查询OTA固件
+  rpc PageOta(PageOtaRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/otaMag"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "分页查询OTA固件";
+    };
+  }
+
+  // GetOta 获取OTA固件详情（动态路由）
+  rpc GetOta(GetOtaRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/otaMag/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取OTA固件详情";
+    };
+  }
+
+  // SaveOta 保存OTA固件信息
+  rpc SaveOta(SaveOtaRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/otaMag"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "保存OTA固件信息";
+    };
+  }
+
+  // UpdateOta 修改OTA固件信息（动态路由）
+  rpc UpdateOta(UpdateOtaRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/otaMag/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "修改OTA固件信息";
+    };
+  }
+
+  // DeleteOta 删除OTA固件（动态路由）
+  rpc DeleteOta(DeleteOtaRequest) returns (Response) {
+    option (google.api.http) = {
+      delete: "/otaMag/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除OTA固件";
+    };
+  }
+
+  // GetDownloadUrl 获取下载链接（静态路由，必须在动态路由之前）
+  rpc GetDownloadUrl(GetDownloadUrlRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/otaMag/getDownloadUrl/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取下载链接";
+    };
+  }
+}

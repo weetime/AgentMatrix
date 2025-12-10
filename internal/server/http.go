@@ -31,6 +31,7 @@ func NewHTTPServer(c *conf.Bootstrap,
 	admin *service.AdminService,
 	dataset *service.DatasetService,
 	voiceClone *service.VoiceCloneService,
+	ota *service.OtaService,
 	logger log.Logger,
 ) *http.Server {
 
@@ -66,8 +67,10 @@ func NewHTTPServer(c *conf.Bootstrap,
 	v1.RegisterAdminServiceHTTPServer(srv, admin)
 	v1.RegisterDatasetServiceHTTPServer(srv, dataset)
 	v1.RegisterVoiceCloneServiceHTTPServer(srv, voiceClone)
+	v1.RegisterOtaServiceHTTPServer(srv, ota)
 	// 注册自定义HTTP handlers（注意：静态路由必须在动态路由之前注册）
 	service.RegisterVoiceCloneHTTPHandlers(srv, voiceClone)
+	service.RegisterOtaHTTPHandlers(srv, ota)
 	srv.HandlePrefix("/q/", openapiv2.NewHandler())
 	srv.HandleFunc("/ws", service.WebSocketHandler)
 	return srv

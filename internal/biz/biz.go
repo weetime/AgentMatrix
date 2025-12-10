@@ -24,4 +24,5 @@ var ProviderSet = wire.NewSet(
 	NewDatasetUsecase,
 	NewRAGAdapterFactory,
 	NewDocumentUsecase,
+	NewOtaUsecase,
 )

@@ -151,6 +151,16 @@ func GetVoiceCloneAudioIdKey(uuid string) string {
 	return fmt.Sprintf("voiceClone:audio:id:%s", uuid)
 }
 
+// GetOtaIdKey 获取OTA固件ID的缓存key
+func GetOtaIdKey(uuid string) string {
+	return fmt.Sprintf("ota:id:%s", uuid)
+}
+
+// GetOtaDownloadCountKey 获取OTA固件下载次数的缓存key
+func GetOtaDownloadCountKey(uuid string) string {
+	return fmt.Sprintf("ota:download:count:%s", uuid)
+}
+
 // GetRedisObject 获取Redis对象（辅助函数，用于直接使用redis.Client的场景）
 func GetRedisObject(ctx context.Context, client *redis.Client, key string, dest interface{}) error {
 	val, err := client.Get(ctx, key).Result()

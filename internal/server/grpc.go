@@ -23,6 +23,7 @@ func NewGRPCServer(c *conf.Bootstrap,
 	device *service.DeviceService,
 	admin *service.AdminService,
 	voiceClone *service.VoiceCloneService,
+	ota *service.OtaService,
 	logger log.Logger,
 ) *grpc.Server {
 
@@ -51,5 +52,6 @@ func NewGRPCServer(c *conf.Bootstrap,
 	v1.RegisterDeviceServiceServer(srv, device)
 	v1.RegisterAdminServiceServer(srv, admin)
 	v1.RegisterVoiceCloneServiceServer(srv, voiceClone)
+	v1.RegisterOtaServiceServer(srv, ota)
 	return srv
 }
