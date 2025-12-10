@@ -177,3 +177,11 @@ func GetTokenFromContext(ctx context.Context) (string, error) {
 	}
 	return user.Token, nil
 }
+
+func IsSuperAdmin(ctx context.Context) bool {
+	user, err := GetUserFromContext(ctx)
+	if err != nil {
+		return false
+	}
+	return user.SuperAdmin == 1
+}

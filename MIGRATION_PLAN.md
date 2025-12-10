@@ -346,20 +346,20 @@
 | 115 | POST | `/datasets/{dataset_id}/retrieval-test` | 召回测试 | 普通用户 | 1天 | ✅ 已完成 |
 
 **声音克隆管理**:
-| 116 | GET | `/voiceClone` | 分页查询音色资源 | 普通用户 | 0.5天 |
-| 117 | POST | `/voiceClone/upload` | 上传音频进行声音克隆 | 普通用户 | 1天 |
-| 118 | POST | `/voiceClone/updateName` | 更新声音克隆名称 | 普通用户 | 0.5天 |
-| 119 | POST | `/voiceClone/audio/{id}` | 获取音频下载ID | 普通用户 | 0.5天 |
-| 120 | GET | `/voiceClone/play/{uuid}` | 播放音频 | 公开 | 0.5天 |
-| 121 | POST | `/voiceClone/cloneAudio` | 复刻音频 | 普通用户 | 1天 |
+| 116 | GET | `/voiceClone` | 分页查询音色资源 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 117 | POST | `/voiceClone/upload` | 上传音频进行声音克隆 | 普通用户 | 1天 | ✅ 已完成 |
+| 118 | POST | `/voiceClone/updateName` | 更新声音克隆名称 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 119 | POST | `/voiceClone/audio/{id}` | 获取音频下载ID | 普通用户 | 0.5天 | ✅ 已完成 |
+| 120 | GET | `/voiceClone/play/{uuid}` | 播放音频 | 公开 | 0.5天 | ✅ 已完成 |
+| 121 | POST | `/voiceClone/cloneAudio` | 复刻音频 | 普通用户 | 1天 | ✅ 已完成 |
 
 **音色资源管理**:
-| 122 | GET | `/voiceResource` | 分页查询音色资源 | 超级管理员 | 0.5天 |
-| 123 | GET | `/voiceResource/{id}` | 获取音色资源详情 | 超级管理员 | 0.5天 |
-| 124 | POST | `/voiceResource` | 新增音色资源 | 超级管理员 | 0.5天 |
-| 125 | DELETE | `/voiceResource/{id}` | 删除音色资源 | 超级管理员 | 0.5天 |
-| 126 | GET | `/voiceResource/user/{userId}` | 根据用户ID获取音色资源 | 普通用户 | 0.5天 |
-| 127 | GET | `/voiceResource/ttsPlatforms` | 获取 TTS 平台列表 | 超级管理员 | 0.5天 |
+| 122 | GET | `/voiceResource` | 分页查询音色资源 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 123 | GET | `/voiceResource/{id}` | 获取音色资源详情 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 124 | POST | `/voiceResource` | 新增音色资源 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 125 | DELETE | `/voiceResource/{id}` | 删除音色资源 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 126 | GET | `/voiceResource/user/{userId}` | 根据用户ID获取音色资源 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 127 | GET | `/voiceResource/ttsPlatforms` | 获取 TTS 平台列表 | 超级管理员 | 0.5天 | ✅ 已完成 |
 
 **Phase 7 总计**: 约 12 天（2.5周）
 

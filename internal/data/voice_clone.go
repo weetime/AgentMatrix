@@ -2,7 +2,10 @@ package data
 
 import (
 	"context"
+	"strings"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/weetime/agent-matrix/internal/biz"
 	"github.com/weetime/agent-matrix/internal/data/ent"
 	"github.com/weetime/agent-matrix/internal/data/ent/voiceclone"
@@ -193,4 +196,100 @@ func (r *voiceCloneRepo) UpdateVoiceID(ctx context.Context, id string, voiceID s
 		SetVoiceID(voiceID).
 		Save(ctx)
 	return err
+}
+
+// SaveVoiceResource 批量保存音色资源
+func (r *voiceCloneRepo) SaveVoiceResource(ctx context.Context, entities []*biz.VoiceClone) error {
+	if len(entities) == 0 {
+		return nil
+	}
+
+	// 使用事务批量创建
+	tx, err := r.data.db.Tx(ctx)
+	if err != nil {
+		return err
+	}
+
+	// 创建每个实体
+	for _, entity := range entities {
+		// 生成ID（UUID去掉横线，限制32字符）
+		id := strings.ReplaceAll(uuid.New().String(), "-", "")
+		if len(id) > 32 {
+			id = id[:32]
+		}
+
+		create := tx.VoiceClone.Create().
+			SetID(id).
+			SetModelID(entity.ModelID).
+			SetVoiceID(entity.VoiceID).
+			SetName(entity.Name).
+			SetUserID(entity.UserID).
+			SetTrainStatus(entity.TrainStatus)
+
+		if entity.CreateDate.IsZero() {
+			create.SetCreateDate(time.Now())
+		} else {
+			create.SetCreateDate(entity.CreateDate)
+		}
+
+		if entity.Creator > 0 {
+			create.SetCreator(entity.Creator)
+		}
+
+		_, err := create.Save(ctx)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+// DeleteVoiceResource 批量删除音色资源
+func (r *voiceCloneRepo) DeleteVoiceResource(ctx context.Context, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	_, err := r.data.db.VoiceClone.Delete().
+		Where(voiceclone.IDIn(ids...)).
+		Exec(ctx)
+	return err
+}
+
+// CheckVoiceIdExists 检查voiceId是否已存在（同一modelId下）
+func (r *voiceCloneRepo) CheckVoiceIdExists(ctx context.Context, modelId string, voiceId string) (bool, error) {
+	count, err := r.data.db.VoiceClone.Query().
+		Where(
+			voiceclone.ModelIDEQ(modelId),
+			voiceclone.VoiceIDEQ(voiceId),
+		).
+		Count(ctx)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// GetByUserId 根据用户ID查询声音克隆列表
+func (r *voiceCloneRepo) GetByUserId(ctx context.Context, userId int64) ([]*biz.VoiceClone, error) {
+	entities, err := r.data.db.VoiceClone.Query().
+		Where(voiceclone.UserIDEQ(userId)).
+		Order(ent.Desc(voiceclone.FieldCreateDate)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*biz.VoiceClone, len(entities))
+	for i, e := range entities {
+		var bizEntity biz.VoiceClone
+		if err := copier.Copy(&bizEntity, e); err != nil {
+			return nil, err
+		}
+		result[i] = &bizEntity
+	}
+
+	return result, nil
 }

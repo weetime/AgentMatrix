@@ -54,6 +54,12 @@ type Voice struct {
 	VoiceDemo string
 }
 
+// TtsPlatformDTO TTS平台DTO
+type TtsPlatformDTO struct {
+	ID        string // 平台ID
+	ModelName string // 平台名称
+}
+
 // ListModelConfigParams 查询模型配置过滤条件
 type ListModelConfigParams struct {
 	ModelType string
@@ -75,6 +81,7 @@ type ModelConfigRepo interface {
 	CheckAgentReference(ctx context.Context, modelId string) ([]string, error)    // 返回智能体名称列表
 	CheckIntentConfigReference(ctx context.Context, modelId string) (bool, error) // 检查意图识别配置引用
 	GetRAGModelList(ctx context.Context) ([]*ModelConfig, error)                  // 获取RAG模型列表
+	GetTtsPlatforms(ctx context.Context) ([]*TtsPlatformDTO, error)               // 获取TTS平台列表
 }
 
 // ListModelProviderParams 查询模型供应器过滤条件
@@ -138,6 +145,11 @@ func (uc *ModelUsecase) GetModelCodeList(ctx context.Context, modelType string, 
 // GetLlmModelCodeList 获取LLM模型信息列表
 func (uc *ModelUsecase) GetLlmModelCodeList(ctx context.Context, modelName *string) ([]*ModelConfig, error) {
 	return uc.repo.GetLlmModelCodeList(ctx, modelName)
+}
+
+// GetTtsPlatforms 获取TTS平台列表
+func (uc *ModelUsecase) GetTtsPlatforms(ctx context.Context) ([]*TtsPlatformDTO, error) {
+	return uc.repo.GetTtsPlatforms(ctx)
 }
 
 // GetModelProviderList 获取模型供应器列表

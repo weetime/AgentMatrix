@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/weetime/agent-matrix/internal/biz"
 	"github.com/weetime/agent-matrix/internal/kit"
+	"github.com/weetime/agent-matrix/internal/middleware"
 	pb "github.com/weetime/agent-matrix/protos/v1"
 
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -16,16 +17,19 @@ import (
 
 type VoiceCloneService struct {
 	uc          *biz.VoiceCloneUsecase
+	modelUC     *biz.ModelUsecase
 	redisClient *kit.RedisClient
 	pb.UnimplementedVoiceCloneServiceServer
 }
 
 func NewVoiceCloneService(
 	uc *biz.VoiceCloneUsecase,
+	modelUC *biz.ModelUsecase,
 	redisClient *kit.RedisClient,
 ) *VoiceCloneService {
 	return &VoiceCloneService{
 		uc:          uc,
+		modelUC:     modelUC,
 		redisClient: redisClient,
 	}
 }
@@ -33,7 +37,7 @@ func NewVoiceCloneService(
 // PageVoiceClone 分页查询音色资源
 func (s *VoiceCloneService) PageVoiceClone(ctx context.Context, req *pb.PageVoiceCloneRequest) (*pb.Response, error) {
 	// 获取当前用户ID
-	currentUserId, err := getCurrentUserID(ctx)
+	currentUserId, err := middleware.GetUserIdFromContext(ctx)
 	if err != nil {
 		return &pb.Response{
 			Code: 401,
@@ -50,20 +54,35 @@ func (s *VoiceCloneService) PageVoiceClone(ctx context.Context, req *pb.PageVoic
 		params.Name = &name
 	}
 
-	// 解析分页参数
+	// 解析分页参数（支持pageNum/pageSize和page/limit两种参数名）
 	page := &kit.PageRequest{}
-	pageNo := req.GetPage()
+	pageNo := req.GetPageNum()
 	if pageNo == 0 {
-		pageNo = 1
+		pageNo = 1 // 默认第1页
 	}
-	pageSize := req.GetLimit()
+	pageSize := req.GetPageSize()
 	if pageSize == 0 {
 		pageSize = kit.DEFAULT_PAGE_ZISE
 	}
 	page.SetPageNo(int(pageNo))
 	page.SetPageSize(int(pageSize))
-	page.SetSortDesc()
-	page.SetSortField("create_date")
+
+	// 解析排序参数（支持orderField和order参数）
+	if req.OrderField != nil && req.OrderField.GetValue() != "" {
+		page.SetSortField(req.OrderField.GetValue())
+	} else {
+		page.SetSortField("create_date")
+	}
+
+	if req.Order != nil && req.Order.GetValue() != "" {
+		if req.Order.GetValue() == "asc" {
+			page.SetSortAsc()
+		} else {
+			page.SetSortDesc()
+		}
+	} else {
+		page.SetSortDesc()
+	}
 
 	// 查询列表
 	list, total, err := s.uc.PageVoiceClone(ctx, params, page)
@@ -348,7 +367,7 @@ func (s *VoiceCloneService) voiceCloneToVO(dto *biz.VoiceCloneResponseDTO) map[s
 // checkPermission 检查权限（验证记录存在且属于当前用户）
 func (s *VoiceCloneService) checkPermission(ctx context.Context, id string) error {
 	// 获取当前用户ID
-	currentUserId, err := getCurrentUserID(ctx)
+	currentUserId, err := middleware.GetUserIdFromContext(ctx)
 	if err != nil {
 		return fmt.Errorf("未授权")
 	}
@@ -379,4 +398,350 @@ func parseUserID(userIDStr string) (int64, error) {
 	var userId int64
 	_, err := fmt.Sscanf(userIDStr, "%d", &userId)
 	return userId, err
+}
+
+// checkSuperAdminPermission 检查是否为超级管理员
+func (s *VoiceCloneService) checkSuperAdminPermission(ctx context.Context) error {
+	user, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("未授权")
+	}
+	if user.SuperAdmin != 1 {
+		return fmt.Errorf("需要超级管理员权限")
+	}
+	return nil
+}
+
+// GetTtsPlatforms 获取TTS平台列表（超级管理员）
+func (s *VoiceCloneService) GetTtsPlatforms(ctx context.Context, req *emptypb.Empty) (*pb.Response, error) {
+	// 权限检查：超级管理员
+	if err := s.checkSuperAdminPermission(ctx); err != nil {
+		return &pb.Response{
+			Code: 403,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 调用modelUsecase获取TTS平台列表
+	platforms, err := s.modelUC.GetTtsPlatforms(ctx)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 转换为VO列表
+	voList := make([]interface{}, 0, len(platforms))
+	for _, platform := range platforms {
+		voList = append(voList, map[string]interface{}{
+			"id":        platform.ID,
+			"modelName": platform.ModelName,
+		})
+	}
+
+	// 构建响应数据
+	dataStruct, err := structpb.NewStruct(map[string]interface{}{
+		"list": voList,
+	})
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  "构建响应数据失败: " + err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+		Data: dataStruct,
+	}, nil
+}
+
+// PageVoiceResource 分页查询音色资源（超级管理员）
+func (s *VoiceCloneService) PageVoiceResource(ctx context.Context, req *pb.PageVoiceResourceRequest) (*pb.Response, error) {
+	userId, err := middleware.GetUserIdFromContext(ctx)
+	if err != nil {
+		return &pb.Response{
+			Code: 401,
+			Msg:  "未授权",
+		}, nil
+	}
+	// 解析查询参数
+	params := &biz.ListVoiceCloneParams{}
+
+	if middleware.IsSuperAdmin(ctx) {
+		params.UserID = 0
+	} else {
+		params.UserID = userId
+	}
+
+	// 解析name参数（可选）
+	if req.Name != nil && req.Name.GetValue() != "" {
+		name := req.Name.GetValue()
+		params.Name = &name
+	}
+
+	// 解析分页参数（支持pageNum/pageSize和page/limit两种参数名）
+	page := &kit.PageRequest{}
+	pageNo := req.GetPageNum()
+	if pageNo == 0 {
+		pageNo = 1 // 默认第1页
+	}
+	pageSize := req.GetPageSize()
+	if pageSize == 0 {
+		pageSize = kit.DEFAULT_PAGE_ZISE
+	}
+	page.SetPageNo(int(pageNo))
+	page.SetPageSize(int(pageSize))
+
+	// 解析排序参数（支持orderField和order参数）
+	if req.OrderField != nil && req.OrderField.GetValue() != "" {
+		page.SetSortField(req.OrderField.GetValue())
+	} else {
+		page.SetSortField("create_date")
+	}
+
+	if req.Order != nil && req.Order.GetValue() != "" {
+		if req.Order.GetValue() == "asc" {
+			page.SetSortAsc()
+		} else {
+			page.SetSortDesc()
+		}
+	} else {
+		page.SetSortDesc()
+	}
+
+	// 查询列表
+	list, total, err := s.uc.PageVoiceClone(ctx, params, page)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 转换为VO列表
+	voList := make([]interface{}, 0, len(list))
+	for _, item := range list {
+		vo := s.voiceCloneToVO(item)
+		voList = append(voList, vo)
+	}
+
+	// 构建响应数据
+	data := map[string]interface{}{
+		"total": int32(total),
+		"list":  voList,
+	}
+
+	dataStruct, err := structpb.NewStruct(data)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  "构建响应数据失败: " + err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+		Data: dataStruct,
+	}, nil
+}
+
+// GetVoiceResource 获取音色资源详情（超级管理员）
+func (s *VoiceCloneService) GetVoiceResource(ctx context.Context, req *pb.GetVoiceResourceRequest) (*pb.Response, error) {
+	// 权限检查：超级管理员
+	if err := s.checkSuperAdminPermission(ctx); err != nil {
+		return &pb.Response{
+			Code: 403,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	id := req.GetId()
+	if id == "" {
+		return &pb.Response{
+			Code: 400,
+			Msg:  "id不能为空",
+		}, nil
+	}
+
+	// 查询详情
+	dto, err := s.uc.GetVoiceCloneByID(ctx, id)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+	if dto == nil {
+		return &pb.Response{
+			Code: 404,
+			Msg:  "音色资源不存在",
+		}, nil
+	}
+
+	// 转换为VO
+	vo := s.voiceCloneToVO(dto)
+
+	// 构建响应数据
+	dataStruct, err := structpb.NewStruct(vo)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  "构建响应数据失败: " + err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+		Data: dataStruct,
+	}, nil
+}
+
+// SaveVoiceResource 新增音色资源（超级管理员）
+func (s *VoiceCloneService) SaveVoiceResource(ctx context.Context, req *pb.SaveVoiceResourceRequest) (*pb.Response, error) {
+	// 权限检查：超级管理员
+	if err := s.checkSuperAdminPermission(ctx); err != nil {
+		return &pb.Response{
+			Code: 403,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 参数验证
+	modelId := req.GetModelId()
+	if modelId == "" {
+		return &pb.Response{
+			Code: 400,
+			Msg:  "modelId不能为空",
+		}, nil
+	}
+
+	voiceIds := req.GetVoiceIds()
+	if len(voiceIds) == 0 {
+		return &pb.Response{
+			Code: 400,
+			Msg:  "voiceIds不能为空",
+		}, nil
+	}
+
+	userId := req.GetUserId()
+	if userId <= 0 {
+		return &pb.Response{
+			Code: 400,
+			Msg:  "userId不能为空",
+		}, nil
+	}
+
+	// 调用biz层保存
+	err := s.uc.SaveVoiceResource(ctx, modelId, voiceIds, userId)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+	}, nil
+}
+
+// DeleteVoiceResource 删除音色资源（超级管理员）
+func (s *VoiceCloneService) DeleteVoiceResource(ctx context.Context, req *pb.DeleteVoiceResourceRequest) (*pb.Response, error) {
+	// 权限检查：超级管理员
+	if err := s.checkSuperAdminPermission(ctx); err != nil {
+		return &pb.Response{
+			Code: 403,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 参数验证
+	ids := req.GetIds()
+	if len(ids) == 0 {
+		return &pb.Response{
+			Code: 400,
+			Msg:  "ids不能为空",
+		}, nil
+	}
+
+	// 调用biz层删除
+	err := s.uc.DeleteVoiceResource(ctx, ids)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+	}, nil
+}
+
+// GetVoiceResourceByUserId 根据用户ID获取音色资源（普通用户）
+func (s *VoiceCloneService) GetVoiceResourceByUserId(ctx context.Context, req *pb.GetVoiceResourceByUserIdRequest) (*pb.Response, error) {
+	// 权限检查：普通用户（已验证登录即可）
+	currentUserId, err := middleware.GetUserIdFromContext(ctx)
+	if err != nil {
+		return &pb.Response{
+			Code: 401,
+			Msg:  "未授权",
+		}, nil
+	}
+
+	userId := req.GetUserId()
+	if userId <= 0 {
+		return &pb.Response{
+			Code: 400,
+			Msg:  "userId不能为空",
+		}, nil
+	}
+
+	// 普通用户只能查询自己的数据
+	if userId != currentUserId {
+		return &pb.Response{
+			Code: 403,
+			Msg:  "无权限",
+		}, nil
+	}
+
+	// 查询列表
+	list, err := s.uc.GetByUserIdWithNames(ctx, userId)
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  err.Error(),
+		}, nil
+	}
+
+	// 转换为VO列表
+	voList := make([]interface{}, 0, len(list))
+	for _, item := range list {
+		vo := s.voiceCloneToVO(item)
+		voList = append(voList, vo)
+	}
+
+	// 构建响应数据
+	dataStruct, err := structpb.NewStruct(map[string]interface{}{
+		"list": voList,
+	})
+	if err != nil {
+		return &pb.Response{
+			Code: 500,
+			Msg:  "构建响应数据失败: " + err.Error(),
+		}, nil
+	}
+
+	return &pb.Response{
+		Code: 0,
+		Msg:  "success",
+		Data: dataStruct,
+	}, nil
 }

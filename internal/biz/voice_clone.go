@@ -82,6 +82,18 @@ type VoiceCloneRepo interface {
 
 	// UpdateVoiceID 更新voiceId
 	UpdateVoiceID(ctx context.Context, id string, voiceID string) error
+
+	// SaveVoiceResource 批量保存音色资源
+	SaveVoiceResource(ctx context.Context, entities []*VoiceClone) error
+
+	// DeleteVoiceResource 批量删除音色资源
+	DeleteVoiceResource(ctx context.Context, ids []string) error
+
+	// CheckVoiceIdExists 检查voiceId是否已存在（同一modelId下）
+	CheckVoiceIdExists(ctx context.Context, modelId string, voiceId string) (bool, error)
+
+	// GetByUserId 根据用户ID查询声音克隆列表
+	GetByUserId(ctx context.Context, userId int64) ([]*VoiceClone, error)
 }
 
 // VoiceCloneUsecase 音色克隆业务逻辑
@@ -122,9 +134,6 @@ func (uc *VoiceCloneUsecase) GetTrainSuccess(ctx context.Context, modelId string
 
 // PageVoiceClone 分页查询声音克隆列表（带模型名称和用户名称）
 func (uc *VoiceCloneUsecase) PageVoiceClone(ctx context.Context, params *ListVoiceCloneParams, page *kit.PageRequest) ([]*VoiceCloneResponseDTO, int, error) {
-	if params == nil || params.UserID <= 0 {
-		return nil, 0, uc.handleError.ErrInvalidInput(ctx, fmt.Errorf("userId不能为空"))
-	}
 
 	// 查询列表
 	list, total, err := uc.repo.PageVoiceClone(ctx, params, page)
@@ -245,7 +254,7 @@ func (uc *VoiceCloneUsecase) CloneAudio(ctx context.Context, cloneId string) err
 	}
 
 	// 验证音频数据已上传
-	if entity.Voice == nil || len(entity.Voice) == 0 {
+	if len(entity.Voice) == 0 {
 		return uc.handleError.ErrInvalidInput(ctx, fmt.Errorf("音频数据未上传"))
 	}
 
@@ -272,7 +281,7 @@ func (uc *VoiceCloneUsecase) convertToResponseDTO(ctx context.Context, entity *V
 		UserID:      fmt.Sprintf("%d", entity.UserID),
 		TrainStatus: entity.TrainStatus,
 		TrainError:  entity.TrainError,
-		HasVoice:    entity.Voice != nil && len(entity.Voice) > 0,
+		HasVoice:    len(entity.Voice) > 0,
 	}
 
 	// 格式化创建时间
@@ -300,6 +309,120 @@ func (uc *VoiceCloneUsecase) convertToResponseDTO(ctx context.Context, entity *V
 // GetUserByID 获取用户信息（辅助方法，用于UserUsecase接口）
 func (uc *VoiceCloneUsecase) GetUserByID(ctx context.Context, userId int64) (*User, error) {
 	return uc.userRepo.GetByUserId(ctx, userId)
+}
+
+// SaveVoiceResource 批量创建音色资源
+func (uc *VoiceCloneUsecase) SaveVoiceResource(ctx context.Context, modelId string, voiceIds []string, userId int64) error {
+	if modelId == "" {
+		return uc.handleError.ErrInvalidInput(ctx, fmt.Errorf("modelId不能为空"))
+	}
+	if len(voiceIds) == 0 {
+		return uc.handleError.ErrInvalidInput(ctx, fmt.Errorf("voiceIds不能为空"))
+	}
+	if userId <= 0 {
+		return uc.handleError.ErrInvalidInput(ctx, fmt.Errorf("userId不能为空"))
+	}
+
+	// 获取模型配置
+	modelConfig, err := uc.modelRepo.GetModelConfigByID(ctx, modelId)
+	if err != nil {
+		return uc.handleError.ErrInternal(ctx, fmt.Errorf("获取模型配置失败: %w", err))
+	}
+	if modelConfig == nil {
+		return uc.handleError.ErrNotFound(ctx, fmt.Errorf("模型配置不存在"))
+	}
+
+	// 解析模型配置JSON
+	var config map[string]interface{}
+	if err := json.Unmarshal([]byte(modelConfig.ConfigJSON), &config); err != nil {
+		return uc.handleError.ErrInternal(ctx, fmt.Errorf("解析模型配置失败: %w", err))
+	}
+
+	// 获取类型
+	configType, _ := config["type"].(string)
+	if configType == "" {
+		return uc.handleError.ErrInvalidInput(ctx, fmt.Errorf("模型类型不能为空"))
+	}
+
+	// 检查Voice ID是否已经被使用
+	for _, voiceId := range voiceIds {
+		if voiceId == "" {
+			continue
+		}
+
+		// 验证火山引擎voiceId格式
+		if configType == "huoshan_double_stream" {
+			if !strings.HasPrefix(voiceId, "S_") {
+				return uc.handleError.ErrInvalidInput(ctx, fmt.Errorf("火山引擎双声道voiceId必须以S_开头"))
+			}
+		}
+
+		// 检查voiceId是否已存在
+		exists, err := uc.repo.CheckVoiceIdExists(ctx, modelId, voiceId)
+		if err != nil {
+			return uc.handleError.ErrInternal(ctx, fmt.Errorf("检查voiceId失败: %w", err))
+		}
+		if exists {
+			return uc.handleError.ErrInvalidInput(ctx, fmt.Errorf("voiceId %s 已存在", voiceId))
+		}
+	}
+
+	// 生成名称前缀（格式：MMddHHmm）
+	namePrefix := time.Now().Format("01021504")
+
+	// 批量创建记录
+	entities := make([]*VoiceClone, 0, len(voiceIds))
+	for index, voiceId := range voiceIds {
+		if voiceId == "" {
+			continue
+		}
+		index++
+		entity := &VoiceClone{
+			ModelID:     modelId,
+			VoiceID:     voiceId,
+			Name:        fmt.Sprintf("%s_%d", namePrefix, index),
+			UserID:      userId,
+			TrainStatus: 0, // 默认待训练
+		}
+		entities = append(entities, entity)
+	}
+
+	if len(entities) == 0 {
+		return uc.handleError.ErrInvalidInput(ctx, fmt.Errorf("没有有效的voiceId"))
+	}
+
+	// 批量保存
+	return uc.repo.SaveVoiceResource(ctx, entities)
+}
+
+// DeleteVoiceResource 批量删除音色资源
+func (uc *VoiceCloneUsecase) DeleteVoiceResource(ctx context.Context, ids []string) error {
+	if len(ids) == 0 {
+		return uc.handleError.ErrInvalidInput(ctx, fmt.Errorf("ids不能为空"))
+	}
+	return uc.repo.DeleteVoiceResource(ctx, ids)
+}
+
+// GetByUserIdWithNames 根据用户ID查询带模型名称和用户名称的声音克隆列表
+func (uc *VoiceCloneUsecase) GetByUserIdWithNames(ctx context.Context, userId int64) ([]*VoiceCloneResponseDTO, error) {
+	if userId <= 0 {
+		return nil, uc.handleError.ErrInvalidInput(ctx, fmt.Errorf("userId不能为空"))
+	}
+
+	// 查询列表
+	entityList, err := uc.repo.GetByUserId(ctx, userId)
+	if err != nil {
+		return nil, uc.handleError.ErrInternal(ctx, err)
+	}
+
+	// 转换为DTO列表
+	dtoList := make([]*VoiceCloneResponseDTO, 0, len(entityList))
+	for _, entity := range entityList {
+		dto := uc.convertToResponseDTO(ctx, entity)
+		dtoList = append(dtoList, dto)
+	}
+
+	return dtoList, nil
 }
 
 // huoshanClone 调用火山引擎进行语音复刻训练

@@ -216,6 +216,45 @@ func (r *modelConfigRepo) GetRAGModelList(ctx context.Context) ([]*biz.ModelConf
 	return result, nil
 }
 
+// GetTtsPlatforms 获取TTS平台列表（type为huoshan_double_stream）
+func (r *modelConfigRepo) GetTtsPlatforms(ctx context.Context) ([]*biz.TtsPlatformDTO, error) {
+	// 查询所有TTS类型的模型配置
+	list, err := r.data.db.ModelConfig.Query().
+		Where(modelconfig.ModelTypeEQ("TTS")).
+		Select(modelconfig.FieldID, modelconfig.FieldModelName, modelconfig.FieldConfigJSON).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// 过滤出type为huoshan_double_stream的配置
+	result := make([]*biz.TtsPlatformDTO, 0)
+	for _, item := range list {
+		if item.ConfigJSON == "" {
+			continue
+		}
+
+		// 解析JSON
+		var configMap map[string]interface{}
+		if err := json.Unmarshal([]byte(item.ConfigJSON), &configMap); err != nil {
+			continue
+		}
+
+		// 检查type字段
+		configType, ok := configMap["type"].(string)
+		if !ok || configType != "huoshan_double_stream" {
+			continue
+		}
+
+		result = append(result, &biz.TtsPlatformDTO{
+			ID:        item.ID,
+			ModelName: item.ModelName,
+		})
+	}
+
+	return result, nil
+}
+
 // GetModelConfigByIDRaw 获取模型配置（不经过敏感数据处理）
 func (r *modelConfigRepo) GetModelConfigByIDRaw(ctx context.Context, id string) (*biz.ModelConfig, error) {
 	config, err := r.data.db.ModelConfig.Get(ctx, id)

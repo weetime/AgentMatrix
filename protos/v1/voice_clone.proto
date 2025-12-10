@@ -14,8 +14,10 @@ import "validate/validate.proto";
 // PageVoiceCloneRequest 分页查询音色资源请求
 message PageVoiceCloneRequest {
   google.protobuf.StringValue name = 1;  // 可选，声音名称或voiceId（模糊查询）
-  int64 page = 2 [(validate.rules).int64.gt = 0];  // 页码，从1开始
-  int64 limit = 3 [(validate.rules).int64.gt = 0]; // 每页数量
+  int64 page_num = 2;  // 页码，从1开始，默认1（兼容参数名：pageNum）
+  int64 page_size = 3; // 每页数量，默认10（兼容参数名：pageSize）
+  google.protobuf.StringValue order_field = 4;  // 可选，排序字段（兼容参数名：orderField）
+  google.protobuf.StringValue order = 5;  // 可选，排序方式：asc或desc（兼容参数名：order）
 }
 
 // UpdateVoiceCloneNameRequest 更新声音克隆名称请求
@@ -37,6 +39,38 @@ message CloneAudioRequest {
 // PlayVoiceRequest 播放音频请求
 message PlayVoiceRequest {
   string uuid = 1 [(validate.rules).string.min_len = 1];  // UUID（路径参数）
+}
+
+// PageVoiceResourceRequest 分页查询音色资源请求（超级管理员）
+message PageVoiceResourceRequest {
+  google.protobuf.StringValue name = 1;  // 可选，声音名称或voiceId（模糊查询）
+  google.protobuf.StringValue userId = 2;  // 可选，用户ID过滤
+  int64 page_num = 3;  // 页码，从1开始，默认1（兼容参数名：pageNum）
+  int64 page_size = 4; // 每页数量，默认10（兼容参数名：pageSize）
+  google.protobuf.StringValue order_field = 5;  // 可选，排序字段（兼容参数名：orderField）
+  google.protobuf.StringValue order = 6;  // 可选，排序方式：asc或desc（兼容参数名：order）
+}
+
+// GetVoiceResourceRequest 获取音色资源详情请求
+message GetVoiceResourceRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];  // 音色资源ID
+}
+
+// SaveVoiceResourceRequest 新增音色资源请求
+message SaveVoiceResourceRequest {
+  string model_id = 1 [(validate.rules).string.min_len = 1];  // 模型ID（必填）
+  repeated string voice_ids = 2 [(validate.rules).repeated.min_items = 1];  // 音色ID列表（必填，至少一个）
+  int64 user_id = 3 [(validate.rules).int64.gt = 0];  // 用户ID（必填）
+}
+
+// DeleteVoiceResourceRequest 删除音色资源请求
+message DeleteVoiceResourceRequest {
+  repeated string ids = 1 [(validate.rules).repeated.min_items = 1];  // 音色资源ID列表（必填，至少一个）
+}
+
+// GetVoiceResourceByUserIdRequest 根据用户ID获取音色资源请求
+message GetVoiceResourceByUserIdRequest {
+  int64 user_id = 1 [(validate.rules).int64.gt = 0];  // 用户ID（必填）
 }
 
 // VoiceCloneService 声音克隆管理服务
@@ -103,6 +137,68 @@ service VoiceCloneService {
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "复刻音频";
+    };
+  }
+
+  // GetTtsPlatforms 获取TTS平台列表（静态路由，必须在动态路由前面）
+  rpc GetTtsPlatforms(google.protobuf.Empty) returns (Response) {
+    option (google.api.http) = {
+      get: "/voiceResource/ttsPlatforms"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取TTS平台列表";
+    };
+  }
+
+  // PageVoiceResource 分页查询音色资源（超级管理员）
+  rpc PageVoiceResource(PageVoiceResourceRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/voiceResource"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "分页查询音色资源";
+    };
+  }
+
+  // GetVoiceResource 获取音色资源详情（超级管理员）
+  rpc GetVoiceResource(GetVoiceResourceRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/voiceResource/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取音色资源详情";
+    };
+  }
+
+  // SaveVoiceResource 新增音色资源（超级管理员）
+  rpc SaveVoiceResource(SaveVoiceResourceRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/voiceResource"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "新增音色资源";
+    };
+  }
+
+  // DeleteVoiceResource 删除音色资源（超级管理员）
+  rpc DeleteVoiceResource(DeleteVoiceResourceRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/voiceResource/delete"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除音色资源";
+    };
+  }
+
+  // GetVoiceResourceByUserId 根据用户ID获取音色资源（普通用户）
+  rpc GetVoiceResourceByUserId(GetVoiceResourceByUserIdRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/voiceResource/user/{user_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "根据用户ID获取音色资源";
     };
   }
 }
