@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/weetime/agent-matrix/internal/constant"
+	"github.com/weetime/agent-matrix/internal/middleware"
 	pb "github.com/weetime/agent-matrix/protos/v1"
 
 	kratoshttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -96,19 +98,62 @@ func (s *OtaService) UploadFirmwareHandler(w http.ResponseWriter, r *http.Reques
 
 	// 权限检查：超级管理员
 	ctx := r.Context()
-	// if err := s.checkSuperAdminPermission(ctx); err != nil {
-	// 	response := &pb.Response{
-	// 		Code: 403,
-	// 		Msg:  err.Error(),
-	// 	}
-	// 	w.Header().Set("Content-Type", "application/json")
-	// 	w.WriteHeader(http.StatusForbidden)
-	// 	json.NewEncoder(w).Encode(response)
-	// 	return
-	// }
+
+	// 从HTTP请求中提取Token（因为直接注册的handler可能不经过中间件）
+	token := extractTokenFromRequest(r)
+	if token == "" {
+		response := &pb.Response{
+			Code: 401,
+			Msg:  "未授权",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// 验证Token并获取用户信息
+	user, err := s.tokenService.GetUserByToken(ctx, token)
+	if err != nil || user == nil {
+		response := &pb.Response{
+			Code: 401,
+			Msg:  "未授权",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// 检查账号状态
+	if user.Status == 0 {
+		response := &pb.Response{
+			Code: 401,
+			Msg:  "账号已被锁定",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// 将用户信息存储到Context中
+	ctx = context.WithValue(ctx, middleware.UserDetailKey, user)
+
+	// 检查是否为超级管理员
+	if user.SuperAdmin != 1 {
+		response := &pb.Response{
+			Code: 403,
+			Msg:  "需要超级管理员权限",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
 	// 解析multipart/form-data
-	err := r.ParseMultipartForm(constant.MaxUploadSize)
+	err = r.ParseMultipartForm(constant.MaxUploadSize)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("解析表单失败: %v", err), http.StatusBadRequest)
 		return
@@ -196,4 +241,21 @@ func RegisterOtaHTTPHandlers(srv *kratoshttp.Server, otaService *OtaService) {
 	srv.HandleFunc("/otaMag/upload", func(w http.ResponseWriter, r *http.Request) {
 		otaService.UploadFirmwareHandler(w, r)
 	})
+}
+
+// extractTokenFromRequest 从HTTP请求中提取Token
+// 参考middleware实现：从Authorization header中提取Bearer Token
+func extractTokenFromRequest(r *http.Request) string {
+	auth := r.Header.Get(middleware.AuthorizationHeader)
+	if auth == "" {
+		return ""
+	}
+
+	// 检查Bearer格式：Authorization: Bearer {token}
+	parts := strings.SplitN(auth, " ", 2)
+	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+		return ""
+	}
+
+	return parts[1]
 }
