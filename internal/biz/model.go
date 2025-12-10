@@ -74,6 +74,7 @@ type ModelConfigRepo interface {
 	SetDefaultModel(ctx context.Context, modelType string, isDefault bool) error
 	CheckAgentReference(ctx context.Context, modelId string) ([]string, error)    // 返回智能体名称列表
 	CheckIntentConfigReference(ctx context.Context, modelId string) (bool, error) // 检查意图识别配置引用
+	GetRAGModelList(ctx context.Context) ([]*ModelConfig, error)                  // 获取RAG模型列表
 }
 
 // ListModelProviderParams 查询模型供应器过滤条件

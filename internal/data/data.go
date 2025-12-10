@@ -33,6 +33,7 @@ var ProviderSet = wire.NewSet(
 	NewTtsVoiceRepo,
 	NewAgentVoicePrintRepo,
 	NewVoiceCloneRepo,
+	NewDatasetRepo,
 	kit.NewRedisClient,
 )
 

@@ -1,0 +1,274 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
+
+import "protos/v1/agentmatrix.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/struct.proto";
+import "validate/validate.proto";
+
+// PageDatasetsRequest 分页查询知识库请求
+message PageDatasetsRequest {
+  google.protobuf.StringValue name = 1;  // 可选，知识库名称（模糊查询）
+  int64 page = 2;  // 页码，从1开始
+  int64 limit = 3;  // 每页数量，默认10
+}
+
+// GetDatasetRequest 获取知识库详情请求
+message GetDatasetRequest {
+  string dataset_id = 1 [(validate.rules).string.min_len = 1];  // 知识库ID（路径参数）
+}
+
+// CreateDatasetRequest 创建知识库请求
+message CreateDatasetRequest {
+  string rag_model_id = 1 [(validate.rules).string.min_len = 1];  // RAG模型配置ID
+  string name = 2 [(validate.rules).string.min_len = 1];  // 知识库名称
+  google.protobuf.StringValue description = 3;  // 可选，知识库描述
+  int32 status = 4;  // 状态(0:禁用 1:启用)，默认1
+}
+
+// UpdateDatasetRequest 更新知识库请求
+message UpdateDatasetRequest {
+  string dataset_id = 1 [(validate.rules).string.min_len = 1];  // 知识库ID（路径参数）
+  google.protobuf.StringValue rag_model_id = 2;  // 可选，RAG模型配置ID
+  google.protobuf.StringValue name = 3;  // 可选，知识库名称
+  google.protobuf.StringValue description = 4;  // 可选，知识库描述
+  google.protobuf.Int32Value status = 5;  // 可选，状态(0:禁用 1:启用)
+}
+
+// DeleteDatasetRequest 删除知识库请求
+message DeleteDatasetRequest {
+  string dataset_id = 1 [(validate.rules).string.min_len = 1];  // 知识库ID（路径参数）
+}
+
+// BatchDeleteDatasetsRequest 批量删除知识库请求
+message BatchDeleteDatasetsRequest {
+  string ids = 1 [(validate.rules).string.min_len = 1];  // 知识库ID列表，用逗号分隔
+}
+
+// PageDocumentsRequest 分页查询文档请求
+message PageDocumentsRequest {
+  string dataset_id = 1 [(validate.rules).string.min_len = 1];  // 知识库ID（路径参数）
+  google.protobuf.StringValue name = 2;  // 可选，文档名称（模糊查询）
+  google.protobuf.Int32Value status = 3;  // 可选，文档状态
+  int64 page = 4;  // 页码，从1开始，默认1
+  int64 limit = 5;  // 每页数量，默认10
+}
+
+// PageDocumentsByStatusRequest 按状态查询文档请求
+message PageDocumentsByStatusRequest {
+  string dataset_id = 1 [(validate.rules).string.min_len = 1];  // 知识库ID（路径参数）
+  int32 status = 2 [(validate.rules).int32.gte = 0];  // 文档状态（路径参数）
+  int64 page = 3;  // 页码，从1开始，默认1
+  int64 limit = 4;  // 每页数量，默认10
+}
+
+// UploadDocumentRequest 上传文档请求
+message UploadDocumentRequest {
+  string dataset_id = 1 [(validate.rules).string.min_len = 1];  // 知识库ID（路径参数）
+  google.protobuf.StringValue name = 2;  // 可选，文档名称
+  google.protobuf.StringValue chunk_method = 3;  // 可选，分块方法
+  google.protobuf.StringValue meta_fields = 4;  // 可选，元数据字段（JSON字符串）
+  google.protobuf.StringValue parser_config = 5;  // 可选，解析器配置（JSON字符串）
+}
+
+// DeleteDocumentRequest 删除文档请求
+message DeleteDocumentRequest {
+  string dataset_id = 1 [(validate.rules).string.min_len = 1];  // 知识库ID（路径参数）
+  string document_id = 2 [(validate.rules).string.min_len = 1];  // 文档ID（路径参数）
+}
+
+// ParseDocumentsRequest 解析文档（切块）请求
+message ParseDocumentsRequest {
+  string dataset_id = 1 [(validate.rules).string.min_len = 1];  // 知识库ID（路径参数）
+  repeated string document_ids = 2 [(validate.rules).repeated.min_items = 1];  // 文档ID列表
+}
+
+// ListChunksRequest 列出文档切片请求
+message ListChunksRequest {
+  string dataset_id = 1 [(validate.rules).string.min_len = 1];  // 知识库ID（路径参数）
+  string document_id = 2 [(validate.rules).string.min_len = 1];  // 文档ID（路径参数）
+  google.protobuf.StringValue keywords = 3;  // 可选，关键词过滤
+  int64 page = 4;  // 页码，从1开始，默认1
+  int64 page_size = 5;  // 每页数量，默认1024
+  google.protobuf.StringValue id = 6;  // 可选，切片ID
+}
+
+// RetrievalTestRequest 召回测试请求
+message RetrievalTestRequest {
+  string dataset_id = 1 [(validate.rules).string.min_len = 1];  // 知识库ID（路径参数）
+  string question = 2 [(validate.rules).string.min_len = 1];  // 问题（必填）
+  repeated string dataset_ids = 3;  // 可选，数据集ID列表
+  repeated string document_ids = 4;  // 可选，文档ID列表
+  int64 page = 5;  // 页码，从1开始
+  int64 page_size = 6;  // 每页数量
+  float similarity_threshold = 7;  // 可选，相似度阈值
+  float vector_similarity_weight = 8;  // 可选，向量相似度权重
+  int32 top_k = 9;  // 可选，topK
+  google.protobuf.StringValue rerank_id = 10;  // 可选，重排模型ID
+  bool keyword = 11;  // 可选，是否启用关键词匹配
+  bool highlight = 12;  // 可选，是否启用高亮
+  repeated string cross_languages = 13;  // 可选，跨语言翻译列表
+  google.protobuf.Struct metadata_condition = 14;  // 可选，元数据过滤条件
+}
+
+// DatasetService 知识库管理服务
+service DatasetService {
+  // ========== 静态路由（按路径长度和优先级排序）==========
+
+  // GetRAGModels 获取RAG模型列表
+  rpc GetRAGModels(Empty) returns (Response) {
+    option (google.api.http) = {
+      get: "/datasets/rag-models"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取RAG模型列表";
+    };
+  }
+
+  // PageDatasets 分页查询知识库列表
+  rpc PageDatasets(PageDatasetsRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/datasets"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "分页查询知识库列表";
+    };
+  }
+
+  // CreateDataset 创建知识库
+  rpc CreateDataset(CreateDatasetRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/datasets"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "创建知识库";
+    };
+  }
+
+  // BatchDeleteDatasets 批量删除知识库
+  rpc BatchDeleteDatasets(BatchDeleteDatasetsRequest) returns (Response) {
+    option (google.api.http) = {
+      delete: "/datasets/batch"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "批量删除知识库";
+    };
+  }
+
+  // ========== 动态路由（放在静态路由之后）==========
+
+  // GetDataset 获取知识库详情
+  rpc GetDataset(GetDatasetRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/datasets/{dataset_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取知识库详情";
+    };
+  }
+
+  // UpdateDataset 更新知识库
+  rpc UpdateDataset(UpdateDatasetRequest) returns (Response) {
+    option (google.api.http) = {
+      put: "/datasets/{dataset_id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "更新知识库";
+    };
+  }
+
+  // DeleteDataset 删除知识库
+  rpc DeleteDataset(DeleteDatasetRequest) returns (Response) {
+    option (google.api.http) = {
+      delete: "/datasets/{dataset_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除知识库";
+    };
+  }
+
+  // ========== 文档管理静态路由（放在动态路由之前）==========
+
+  // PageDocumentsByStatus 按状态查询文档（静态路由）
+  rpc PageDocumentsByStatus(PageDocumentsByStatusRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/datasets/{dataset_id}/documents/status/{status}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "按状态查询文档";
+    };
+  }
+
+  // ListChunks 列出文档切片（静态路由）
+  rpc ListChunks(ListChunksRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/datasets/{dataset_id}/documents/{document_id}/chunks"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "列出文档切片";
+    };
+  }
+
+  // ========== 文档管理动态路由 ==========
+
+  // PageDocuments 分页查询文档
+  rpc PageDocuments(PageDocumentsRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/datasets/{dataset_id}/documents"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "分页查询文档";
+    };
+  }
+
+  // UploadDocument 上传文档（注意：文件上传需要特殊处理multipart/form-data）
+  rpc UploadDocument(UploadDocumentRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/datasets/{dataset_id}/documents"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "上传文档";
+    };
+  }
+
+  // DeleteDocument 删除文档
+  rpc DeleteDocument(DeleteDocumentRequest) returns (Response) {
+    option (google.api.http) = {
+      delete: "/datasets/{dataset_id}/documents/{document_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除文档";
+    };
+  }
+
+  // ParseDocuments 解析文档（切块）
+  rpc ParseDocuments(ParseDocumentsRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/datasets/{dataset_id}/chunks"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "解析文档（切块）";
+    };
+  }
+
+  // RetrievalTest 召回测试
+  rpc RetrievalTest(RetrievalTestRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/datasets/{dataset_id}/retrieval-test"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "召回测试";
+    };
+  }
+}
+

@@ -17,4 +17,5 @@ var ProviderSet = wire.NewSet(
 	NewModelService,
 	NewTtsVoiceService,
 	NewAdminService,
+	NewDatasetService,
 )

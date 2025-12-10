@@ -29,6 +29,7 @@ func NewHTTPServer(c *conf.Bootstrap,
 	ttsVoice *service.TtsVoiceService,
 	tokenService middleware.TokenService,
 	admin *service.AdminService,
+	dataset *service.DatasetService,
 	logger log.Logger,
 ) *http.Server {
 
@@ -62,6 +63,7 @@ func NewHTTPServer(c *conf.Bootstrap,
 	v1.RegisterModelServiceHTTPServer(srv, model)
 	v1.RegisterTtsVoiceServiceHTTPServer(srv, ttsVoice)
 	v1.RegisterAdminServiceHTTPServer(srv, admin)
+	v1.RegisterDatasetServiceHTTPServer(srv, dataset)
 	srv.HandlePrefix("/q/", openapiv2.NewHandler())
 	srv.HandleFunc("/ws", service.WebSocketHandler)
 	return srv

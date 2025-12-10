@@ -21,4 +21,7 @@ var ProviderSet = wire.NewSet(
 	NewTtsVoiceUsecase,
 	NewAgentVoicePrintUsecase,
 	NewVoiceCloneUsecase,
+	NewDatasetUsecase,
+	NewRAGAdapterFactory,
+	NewDocumentUsecase,
 )

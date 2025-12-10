@@ -191,6 +191,31 @@ func (r *modelConfigRepo) GetModelConfigByID(ctx context.Context, id string) (*b
 	return bizConfig, nil
 }
 
+// GetRAGModelList 获取RAG模型列表
+func (r *modelConfigRepo) GetRAGModelList(ctx context.Context) ([]*biz.ModelConfig, error) {
+	query := r.data.db.ModelConfig.Query().
+		Where(
+			modelconfig.ModelTypeEQ("RAG"),
+			modelconfig.IsEnabledEQ(true),
+		).
+		Order(ent.Desc(modelconfig.FieldIsDefault), ent.Desc(modelconfig.FieldCreateDate))
+
+	list, err := query.Select(modelconfig.FieldID, modelconfig.FieldModelName).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*biz.ModelConfig, len(list))
+	for i, item := range list {
+		result[i] = &biz.ModelConfig{
+			ID:        item.ID,
+			ModelName: item.ModelName,
+		}
+	}
+
+	return result, nil
+}
+
 // GetModelConfigByIDRaw 获取模型配置（不经过敏感数据处理）
 func (r *modelConfigRepo) GetModelConfigByIDRaw(ctx context.Context, id string) (*biz.ModelConfig, error) {
 	config, err := r.data.db.ModelConfig.Get(ctx, id)
