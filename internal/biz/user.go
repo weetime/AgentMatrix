@@ -309,6 +309,18 @@ func (uc *UserUsecase) GetUserInfo(ctx context.Context, userId int64) (*UserDeta
 	}, nil
 }
 
+// GetUserByID 根据用户ID获取用户信息（用于VoiceCloneUsecase接口）
+func (uc *UserUsecase) GetUserByID(ctx context.Context, userId int64) (*User, error) {
+	user, err := uc.userRepo.GetByUserId(ctx, userId)
+	if err != nil {
+		return nil, uc.handleError.ErrInternal(ctx, err)
+	}
+	if user == nil {
+		return nil, uc.handleError.ErrNotFound(ctx, fmt.Errorf("用户不存在"))
+	}
+	return user, nil
+}
+
 // ChangePassword 修改密码
 func (uc *UserUsecase) ChangePassword(ctx context.Context, userId int64, req *ChangePasswordRequest) error {
 	// 获取用户

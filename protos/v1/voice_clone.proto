@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
+
+import "protos/v1/agentmatrix.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
+import "validate/validate.proto";
+
+// PageVoiceCloneRequest 分页查询音色资源请求
+message PageVoiceCloneRequest {
+  google.protobuf.StringValue name = 1;  // 可选，声音名称或voiceId（模糊查询）
+  int64 page = 2 [(validate.rules).int64.gt = 0];  // 页码，从1开始
+  int64 limit = 3 [(validate.rules).int64.gt = 0]; // 每页数量
+}
+
+// UpdateVoiceCloneNameRequest 更新声音克隆名称请求
+message UpdateVoiceCloneNameRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];  // 声音克隆记录ID（必填）
+  string name = 2 [(validate.rules).string.min_len = 1];  // 声音名称（必填）
+}
+
+// GetAudioIdRequest 获取音频下载ID请求
+message GetAudioIdRequest {
+  string id = 1 [(validate.rules).string.min_len = 1];  // 声音克隆记录ID（路径参数）
+}
+
+// CloneAudioRequest 复刻音频请求
+message CloneAudioRequest {
+  string clone_id = 1 [(validate.rules).string.min_len = 1];  // 语音克隆记录ID（必填）
+}
+
+// PlayVoiceRequest 播放音频请求
+message PlayVoiceRequest {
+  string uuid = 1 [(validate.rules).string.min_len = 1];  // UUID（路径参数）
+}
+
+// VoiceCloneService 声音克隆管理服务
+service VoiceCloneService {
+  // PlayVoice 播放音频（公开接口，静态路由放在前面）
+  rpc PlayVoice(PlayVoiceRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/voiceClone/play/{uuid}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "播放音频";
+    };
+  }
+
+  // PageVoiceClone 分页查询音色资源
+  rpc PageVoiceClone(PageVoiceCloneRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/voiceClone"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "分页查询音色资源";
+    };
+  }
+
+  // UploadVoice 上传音频进行声音克隆
+  // 注意：文件上传需要通过HTTP handler处理multipart/form-data
+  rpc UploadVoice(google.protobuf.Empty) returns (Response) {
+    option (google.api.http) = {
+      post: "/voiceClone/upload"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "上传音频进行声音克隆";
+    };
+  }
+
+  // UpdateVoiceCloneName 更新声音克隆名称
+  rpc UpdateVoiceCloneName(UpdateVoiceCloneNameRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/voiceClone/updateName"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "更新声音克隆名称";
+    };
+  }
+
+  // GetAudioId 获取音频下载ID（动态路由）
+  rpc GetAudioId(GetAudioIdRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/voiceClone/audio/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取音频下载ID";
+    };
+  }
+
+  // CloneAudio 复刻音频
+  rpc CloneAudio(CloneAudioRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/voiceClone/cloneAudio"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "复刻音频";
+    };
+  }
+}

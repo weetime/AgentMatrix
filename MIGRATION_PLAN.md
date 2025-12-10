@@ -328,22 +328,22 @@
 ### Phase 7: 高级功能（P3）
 
 **知识库管理**:
-| 102 | GET | `/datasets` | 分页查询知识库 | 普通用户 | 0.5天 |
-| 103 | GET | `/datasets/{dataset_id}` | 获取知识库详情 | 普通用户 | 0.5天 |
-| 104 | POST | `/datasets` | 创建知识库 | 普通用户 | 0.5天 |
-| 105 | PUT | `/datasets/{dataset_id}` | 更新知识库 | 普通用户 | 0.5天 |
-| 106 | DELETE | `/datasets/{dataset_id}` | 删除知识库 | 普通用户 | 0.5天 |
-| 107 | DELETE | `/datasets/batch` | 批量删除知识库 | 普通用户 | 0.5天 |
-| 108 | GET | `/datasets/rag-models` | 获取 RAG 模型列表 | 普通用户 | 0.5天 |
+| 102 | GET | `/datasets` | 分页查询知识库 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 103 | GET | `/datasets/{dataset_id}` | 获取知识库详情 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 104 | POST | `/datasets` | 创建知识库 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 105 | PUT | `/datasets/{dataset_id}` | 更新知识库 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 106 | DELETE | `/datasets/{dataset_id}` | 删除知识库 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 107 | DELETE | `/datasets/batch` | 批量删除知识库 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 108 | GET | `/datasets/rag-models` | 获取 RAG 模型列表 | 普通用户 | 0.5天 | ✅ 已完成 |
 
 **知识库文档管理**:
-| 109 | GET | `/datasets/{dataset_id}/documents` | 分页查询文档 | 普通用户 | 0.5天 |
-| 110 | GET | `/datasets/{dataset_id}/documents/status/{status}` | 按状态查询文档 | 普通用户 | 0.5天 |
-| 111 | POST | `/datasets/{dataset_id}/documents` | 上传文档 | 普通用户 | 1天 |
-| 112 | DELETE | `/datasets/{dataset_id}/documents/{document_id}` | 删除文档 | 普通用户 | 0.5天 |
-| 113 | POST | `/datasets/{dataset_id}/chunks` | 解析文档（切块） | 普通用户 | 1天 |
-| 114 | GET | `/datasets/{dataset_id}/documents/{document_id}/chunks` | 列出文档切片 | 普通用户 | 0.5天 |
-| 115 | POST | `/datasets/{dataset_id}/retrieval-test` | 召回测试 | 普通用户 | 1天 |
+| 109 | GET | `/datasets/{dataset_id}/documents` | 分页查询文档 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 110 | GET | `/datasets/{dataset_id}/documents/status/{status}` | 按状态查询文档 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 111 | POST | `/datasets/{dataset_id}/documents` | 上传文档 | 普通用户 | 1天 | ✅ 已完成 |
+| 112 | DELETE | `/datasets/{dataset_id}/documents/{document_id}` | 删除文档 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 113 | POST | `/datasets/{dataset_id}/chunks` | 解析文档（切块） | 普通用户 | 1天 | ✅ 已完成 |
+| 114 | GET | `/datasets/{dataset_id}/documents/{document_id}/chunks` | 列出文档切片 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 115 | POST | `/datasets/{dataset_id}/retrieval-test` | 召回测试 | 普通用户 | 1天 | ✅ 已完成 |
 
 **声音克隆管理**:
 | 116 | GET | `/voiceClone` | 分页查询音色资源 | 普通用户 | 0.5天 |
@@ -891,13 +891,14 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
 - [ ] 创建 Phase 7 所需的 Ent Schema
   - `ai_voice_clone.go`
   - `ai_rag_dataset.go`
-- [ ] 实现知识库管理 API（8个）
-- [ ] 实现知识库文档管理 API（7个）
+- ✅ 实现知识库管理 API（7个）
+- ✅ 实现知识库文档管理 API（7个）
 - [ ] 实现声音克隆管理 API（6个）
 - [ ] 实现音色资源管理 API（6个）
 
 **交付物**:
-- ✅ Phase 7 的 27 个高级功能 API
+- ✅ Phase 7 的知识库管理 API（14个已完成）
+- ⏳ Phase 7 的声音克隆和音色资源管理 API（12个待实现）
 
 ---
 
