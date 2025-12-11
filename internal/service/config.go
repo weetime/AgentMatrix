@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/weetime/agent-matrix/internal/biz"
+	"github.com/weetime/agent-matrix/internal/middleware"
 	pb "github.com/weetime/agent-matrix/protos/v1"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -20,12 +21,17 @@ func NewConfigService(uc *biz.ConfigUsecase) *ConfigService {
 	}
 }
 
+// GetConfigUsecase 获取 ConfigUsecase（用于创建 ServerSecretServiceAdapter）
+func (s *ConfigService) GetConfigUsecase() *biz.ConfigUsecase {
+	return s.uc
+}
+
 // GetServerConfig 获取服务器配置
 func (s *ConfigService) GetServerConfig(ctx context.Context, req *pb.GetServerConfigRequest) (*pb.Response, error) {
-	// 默认从缓存读取
+	// 从请求中读取 is_cache 参数，如果未设置则默认为 true（与 Java 实现保持一致）
 	isCache := true
-	if req != nil {
-		isCache = req.IsCache
+	if req.GetIsCache() != nil {
+		isCache = req.GetIsCache().GetValue()
 	}
 
 	// 获取配置
@@ -46,4 +52,19 @@ func (s *ConfigService) GetServerConfig(ctx context.Context, req *pb.GetServerCo
 		Msg:  "success",
 		Data: configStruct,
 	}, nil
+}
+
+// ServerSecretServiceAdapter 将 ConfigUsecase 适配为 ServerSecretService
+type ServerSecretServiceAdapter struct {
+	uc *biz.ConfigUsecase
+}
+
+// NewServerSecretServiceAdapter 创建 ServerSecretService 适配器
+func NewServerSecretServiceAdapter(uc *biz.ConfigUsecase) middleware.ServerSecretService {
+	return &ServerSecretServiceAdapter{uc: uc}
+}
+
+// GetServerSecret 获取服务器密钥（实现 ServerSecretService 接口）
+func (a *ServerSecretServiceAdapter) GetServerSecret(ctx context.Context) (string, error) {
+	return a.uc.GetValue(ctx, "server.secret", true)
 }

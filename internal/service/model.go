@@ -15,6 +15,7 @@ import (
 	pb "github.com/weetime/agent-matrix/protos/v1"
 
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type ModelService struct {
@@ -292,7 +293,7 @@ func (s *ModelService) AddModelConfig(ctx context.Context, req *pb.AddModelConfi
 
 	// 刷新配置缓存
 	if s.configService != nil {
-		s.configService.GetServerConfig(ctx, &pb.GetServerConfigRequest{IsCache: false})
+		s.configService.GetServerConfig(ctx, &pb.GetServerConfigRequest{IsCache: &wrapperspb.BoolValue{Value: false}})
 	}
 
 	// 返回DTO
@@ -355,7 +356,7 @@ func (s *ModelService) EditModelConfig(ctx context.Context, req *pb.EditModelCon
 
 	// 刷新配置缓存
 	if s.configService != nil {
-		s.configService.GetServerConfig(ctx, &pb.GetServerConfigRequest{IsCache: false})
+		s.configService.GetServerConfig(ctx, &pb.GetServerConfigRequest{IsCache: &wrapperspb.BoolValue{Value: false}})
 	}
 
 	// 返回DTO
@@ -447,7 +448,7 @@ func (s *ModelService) SetDefaultModel(ctx context.Context, req *pb.SetDefaultMo
 
 	// 刷新配置缓存
 	if s.configService != nil {
-		s.configService.GetServerConfig(ctx, &pb.GetServerConfigRequest{IsCache: false})
+		s.configService.GetServerConfig(ctx, &pb.GetServerConfigRequest{IsCache: &wrapperspb.BoolValue{Value: false}})
 	}
 
 	// TODO: 更新模板表中对应的模型ID（需要实现AgentTemplateService）

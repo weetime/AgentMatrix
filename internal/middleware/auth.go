@@ -39,6 +39,11 @@ type TokenService interface {
 	GetUserByToken(ctx context.Context, token string) (*UserDetail, error)
 }
 
+// ServerSecretService 服务器密钥服务接口
+type ServerSecretService interface {
+	GetServerSecret(ctx context.Context) (string, error)
+}
+
 // isPathAllowed 检查路径是否在白名单中（不需要认证）
 // 参考Java的ShiroConfig中的anon路径配置
 func isPathAllowed(path string) bool {
@@ -74,9 +79,10 @@ func isPathAllowed(path string) bool {
 	return false
 }
 
-// AuthMiddleware 认证中间件（对应Java的Oauth2Filter）
+// AuthMiddleware 认证中间件（对应Java的Oauth2Filter和ServerSecretFilter）
 // 参考Java实现：如果没有token返回401，如果有token则验证并设置用户信息到context
-func AuthMiddleware(tokenService TokenService) middleware.Middleware {
+// 如果用户token验证失败，会尝试用server.secret进行验证
+func AuthMiddleware(tokenService TokenService, serverSecretService ServerSecretService) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// 从HTTP请求中获取请求对象
@@ -101,27 +107,36 @@ func AuthMiddleware(tokenService TokenService) middleware.Middleware {
 
 			// 如果没有token，返回401（参考Java的onAccessDenied逻辑）
 			if token == "" {
-				return nil, sendUnauthorizedResponse(ctx, 401, "未授权")
+				return nil, sendUnauthorizedResponse(ctx, 401, "服务器密钥不能为空")
 			}
 
-			// 验证Token并获取用户信息
+			// 首先尝试用用户token验证
 			user, err := tokenService.GetUserByToken(ctx, token)
-			if err != nil || user == nil {
-				// Token无效或过期，返回401
-				return nil, sendUnauthorizedResponse(ctx, 401, "未授权")
+			if err == nil && user != nil {
+				// 用户token验证成功，检查账号状态
+				// status为0表示账号被锁定
+				if user.Status == 0 {
+					return nil, sendUnauthorizedResponse(ctx, 401, "账号已被锁定")
+				}
+
+				// 将用户信息存储到Context中
+				ctx = context.WithValue(ctx, UserIDKey, user.ID)
+				ctx = context.WithValue(ctx, UserDetailKey, user)
+
+				return handler(ctx, req)
 			}
 
-			// 检查账号状态（参考Java的Oauth2Realm逻辑）
-			// status为0表示账号被锁定
-			if user.Status == 0 {
-				return nil, sendUnauthorizedResponse(ctx, 401, "账号已被锁定")
+			// 用户token验证失败，尝试用server.secret验证（参考Java的ServerSecretFilter实现）
+			if serverSecretService != nil {
+				serverSecret, err := serverSecretService.GetServerSecret(ctx)
+				if err == nil && serverSecret != "" && serverSecret == token {
+					// server.secret验证成功，允许通过（不设置用户信息，因为这是服务器级别的认证）
+					return handler(ctx, req)
+				}
 			}
 
-			// 将用户信息存储到Context中
-			ctx = context.WithValue(ctx, UserIDKey, user.ID)
-			ctx = context.WithValue(ctx, UserDetailKey, user)
-
-			return handler(ctx, req)
+			// 两种验证都失败，返回401
+			return nil, sendUnauthorizedResponse(ctx, 401, "无效的服务器密钥")
 		}
 	}
 }

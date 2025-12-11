@@ -49,6 +49,8 @@ type ConfigRepo interface {
 // ConfigUsecase 配置业务逻辑
 type ConfigUsecase struct {
 	repo        ConfigRepo
+	agentRepo   AgentRepo
+	modelRepo   ModelConfigRepo
 	redisClient *kit.RedisClient
 	handleError *cerrors.HandleError
 	log         *log.Helper
@@ -57,11 +59,15 @@ type ConfigUsecase struct {
 // NewConfigUsecase 创建配置用例
 func NewConfigUsecase(
 	repo ConfigRepo,
+	agentRepo AgentRepo,
+	modelRepo ModelConfigRepo,
 	redisClient *kit.RedisClient,
 	logger log.Logger,
 ) *ConfigUsecase {
 	return &ConfigUsecase{
 		repo:        repo,
+		agentRepo:   agentRepo,
+		modelRepo:   modelRepo,
 		redisClient: redisClient,
 		handleError: cerrors.NewHandleError(logger),
 		log:         kit.LogHelper(logger),
@@ -75,7 +81,7 @@ func (uc *ConfigUsecase) GetConfig(ctx context.Context, isCache bool) (map[strin
 	if isCache {
 		var cachedConfig map[string]interface{}
 		err := uc.redisClient.GetObject(ctx, kit.RedisKeyServerConfig, &cachedConfig)
-		if err == nil && cachedConfig != nil {
+		if err == nil && cachedConfig != nil && len(cachedConfig) > 0 {
 			uc.log.Debug("Config loaded from cache")
 			// 清理 Java 类型信息
 			cleaned := uc.cleanJavaClassInfo(cachedConfig)
@@ -85,8 +91,11 @@ func (uc *ConfigUsecase) GetConfig(ctx context.Context, isCache bool) (map[strin
 			// 如果类型不匹配，返回原配置
 			return cachedConfig, nil
 		}
+		// 缓存不存在或为空时，继续构建配置（不报错）
 		if err != nil {
-			uc.log.Warn("Failed to load config from cache", "error", err)
+			uc.log.Debug("Cache not found or empty, will build config from database", "error", err)
+		} else {
+			uc.log.Debug("Cache not found or empty, will build config from database")
 		}
 	}
 
@@ -94,6 +103,31 @@ func (uc *ConfigUsecase) GetConfig(ctx context.Context, isCache bool) (map[strin
 	config, err := uc.buildConfig(ctx)
 	if err != nil {
 		return nil, uc.handleError.ErrInternal(ctx, err)
+	}
+
+	// 查询默认智能体模板（sort=1）并构建模块配置
+	templates, err := uc.agentRepo.GetAgentTemplateList(ctx)
+	if err == nil && len(templates) > 0 {
+		// 找到 sort=1 的模板，如果没有则使用第一个
+		var defaultTemplate *AgentTemplate
+		for _, template := range templates {
+			if template.Sort == 1 {
+				defaultTemplate = template
+				break
+			}
+		}
+		if defaultTemplate == nil && len(templates) > 0 {
+			defaultTemplate = templates[0]
+		}
+
+		if defaultTemplate != nil {
+			// 构建模块配置
+			if err := uc.buildModuleConfig(ctx, defaultTemplate, config); err != nil {
+				uc.log.Warn("Failed to build module config", "error", err)
+			}
+		}
+	} else if err != nil {
+		uc.log.Warn("Failed to get agent templates", "error", err)
 	}
 
 	// 清理 Java 类型信息（防止之前缓存的数据污染）
@@ -177,8 +211,9 @@ func (uc *ConfigUsecase) convertValue(value, valueType string) interface{} {
 
 	case "array":
 		// 将分号分隔的字符串转换为字符串数组
+		// 注意：返回 []interface{} 而不是 []string，因为 structpb.NewStruct 不支持 []string
 		parts := strings.Split(value, ";")
-		result := make([]string, 0, len(parts))
+		result := make([]interface{}, 0, len(parts))
 		for _, part := range parts {
 			trimmed := strings.TrimSpace(part)
 			if trimmed != "" {
@@ -242,11 +277,20 @@ func (uc *ConfigUsecase) cleanJavaClassInfo(data interface{}) interface{} {
 
 	case []string:
 		// 处理字符串数组，跳过 Java 类型字符串
-		result := make([]string, 0, len(v))
+		// 转换为 []interface{} 以支持 structpb.NewStruct
+		result := make([]interface{}, 0, len(v))
 		for _, item := range v {
 			if !strings.HasPrefix(item, "java.util.") {
 				result = append(result, item)
 			}
+		}
+		return result
+
+	case map[string]string:
+		// 处理 map[string]string，转换为 map[string]interface{} 以支持 structpb.NewStruct
+		result := make(map[string]interface{})
+		for key, value := range v {
+			result[key] = value
 		}
 		return result
 
@@ -558,5 +602,71 @@ func (uc *ConfigUsecase) GetValueObject(ctx context.Context, paramCode string, i
 		}
 		return nil
 	}
+	return nil
+}
+
+// buildModuleConfig 构建模块配置（参考Java的buildModuleConfig方法）
+func (uc *ConfigUsecase) buildModuleConfig(ctx context.Context, template *AgentTemplate, config map[string]interface{}) error {
+	// 使用 map[string]interface{} 而不是 map[string]string，以支持 structpb.NewStruct
+	selectedModule := make(map[string]interface{})
+
+	// 定义模型类型和对应的模型ID（只处理 VAD 和 ASR，与 Java 项目保持一致）
+	modelTypes := []string{"VAD", "ASR"}
+	modelIds := []string{
+		template.VADModelID,
+		template.ASRModelID,
+	}
+
+	for i, modelId := range modelIds {
+		if modelId == "" {
+			continue
+		}
+
+		modelType := modelTypes[i]
+
+		// 获取模型配置
+		model, err := uc.modelRepo.GetModelConfigByID(ctx, modelId)
+		if err != nil || model == nil {
+			uc.log.Warn("Model config not found", "modelId", modelId, "modelType", modelType, "error", err)
+			continue
+		}
+
+		// 解析模型配置JSON
+		var configJSON map[string]interface{}
+		if model.ConfigJSON != "" {
+			if err := json.Unmarshal([]byte(model.ConfigJSON), &configJSON); err != nil {
+				uc.log.Warn("Failed to parse model config JSON", "modelId", modelId, "error", err)
+				continue
+			}
+		} else {
+			configJSON = make(map[string]interface{})
+		}
+
+		// 构建类型配置
+		typeConfig := make(map[string]interface{})
+		typeConfig[model.ID] = configJSON
+
+		// 将类型配置添加到结果中
+		if existing, ok := config[modelType].(map[string]interface{}); ok {
+			// 如果已存在，合并配置
+			for k, v := range typeConfig {
+				existing[k] = v
+			}
+			config[modelType] = existing
+		} else {
+			config[modelType] = typeConfig
+		}
+
+		// 添加到selected_module（值作为字符串存储）
+		selectedModule[modelType] = model.ID
+	}
+
+	// 添加selected_module到配置
+	config["selected_module"] = selectedModule
+
+	// 设置 prompt 和 summaryMemory 为 null（与 Java 项目保持一致）
+	config["prompt"] = nil
+	config["summaryMemory"] = nil
+
 	return nil
 }

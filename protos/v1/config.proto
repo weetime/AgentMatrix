@@ -3,7 +3,7 @@ syntax = "proto3";
 package v1;
 
 import "google/api/annotations.proto";
-
+import "google/protobuf/wrappers.proto";
 import "protos/v1/agentmatrix.proto";
 option go_package = "github.com/weetime/agent-matrix/protos/v1;v1";
 
@@ -21,7 +21,7 @@ service ConfigService {
 // GetServerConfigRequest 获取服务器配置请求
 message GetServerConfigRequest {
   // is_cache 是否从缓存读取（可选，默认 true）
-  bool is_cache = 1;
+  google.protobuf.BoolValue is_cache = 1;
 }
 
 

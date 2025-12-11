@@ -35,13 +35,16 @@ func NewHTTPServer(c *conf.Bootstrap,
 	logger log.Logger,
 ) *http.Server {
 
+	// 创建 ServerSecretService 适配器
+	serverSecretService := service.NewServerSecretServiceAdapter(config.GetConfigUsecase())
+
 	opts := []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
 			tracing.Server(),
 			validate.Validator(),
 			logging.Server(logger),
-			middleware.AuthMiddleware(tokenService), // 添加认证中间件
+			middleware.AuthMiddleware(tokenService, serverSecretService), // 添加认证中间件
 		),
 	}
 	if c.Server.Http.Network != "" {
