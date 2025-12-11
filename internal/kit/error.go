@@ -17,16 +17,25 @@ const (
 	ErrPermissionDenied
 	ErrInternal
 	ErrAlreadyExists
+	// WebSocket相关错误码
+	ErrWebSocketConnectFailed       ErrorCode = 10045 // WebSocket连接失败
+	ErrInvalidServerAction          ErrorCode = 10095 // 无效服务端操作
+	ErrServerWebsocketNotConfigured ErrorCode = 10096 // 未配置服务端WebSocket地址
+	ErrTargetWebsocketNotExist      ErrorCode = 10097 // 目标WebSocket地址不存在
 )
 
 // 错误码对应的错误信息
 var errorMessages = map[ErrorCode]string{
-	ErrUnknown:          "未知错误",
-	ErrNotFound:         "资源未找到",
-	ErrInvalidInput:     "输入错误",
-	ErrPermissionDenied: "权限错误",
-	ErrInternal:         "内部错误",
-	ErrAlreadyExists:    "资源名已存在",
+	ErrUnknown:                      "未知错误",
+	ErrNotFound:                     "资源未找到",
+	ErrInvalidInput:                 "输入错误",
+	ErrPermissionDenied:             "权限错误",
+	ErrInternal:                     "内部错误",
+	ErrAlreadyExists:                "资源名已存在",
+	ErrWebSocketConnectFailed:       "WebSocket连接失败",
+	ErrInvalidServerAction:          "无效服务端操作",
+	ErrServerWebsocketNotConfigured: "未配置服务端WebSocket地址",
+	ErrTargetWebsocketNotExist:      "目标WebSocket地址不存在",
 }
 
 type HandleError struct {

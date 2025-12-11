@@ -358,6 +358,7 @@ func (uc *ConfigUsecase) validateParamValue(ctx context.Context, paramCode, para
 	// 参数编码常量
 	const (
 		SERVER_WEBSOCKET     = "server.websocket"
+		SERVER_SECRET        = "server.secret"
 		SERVER_OTA           = "server.ota"
 		SERVER_MCP_ENDPOINT  = "server.mcp_endpoint"
 		SERVER_VOICE_PRINT   = "server.voice_print"

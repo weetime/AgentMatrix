@@ -302,8 +302,8 @@
 | 91 | GET | `/admin/dict/data/type/{dictType}` | 获取字典数据列表 | 普通用户 | 0.5天 | ✅ 已完成 |
 
 **服务端管理**:
-| 92 | GET | `/admin/server/server-list` | 获取 WebSocket 服务端列表 | 超级管理员 | 0.5天 |
-| 93 | POST | `/admin/server/emit-action` | 通知服务端更新配置 | 超级管理员 | 1天 |
+| 92 | GET | `/admin/server/server-list` | 获取 WebSocket 服务端列表 | 超级管理员 | 0.5天 | ⚠️待测试
+| 93 | POST | `/admin/server/emit-action` | 通知服务端更新配置 | 超级管理员 | 1天 | ⚠️待测试
 
 **OTA 固件管理**:
 | 94 | GET | `/otaMag` | 分页查询固件 | 超级管理员 | 0.5天 | ✅ 已完成 |

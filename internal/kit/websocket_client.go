@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -58,6 +59,11 @@ func NewWebSocketClient(config *WebSocketClientConfig) *WebSocketClient {
 
 // Connect 连接到WebSocket服务器
 func (c *WebSocketClient) Connect() error {
+	return c.ConnectWithHeaders(nil)
+}
+
+// ConnectWithHeaders 连接到WebSocket服务器（支持自定义请求头）
+func (c *WebSocketClient) ConnectWithHeaders(headers http.Header) error {
 	u, err := url.Parse(c.url)
 	if err != nil {
 		return fmt.Errorf("解析URL失败: %w", err)
@@ -66,11 +72,11 @@ func (c *WebSocketClient) Connect() error {
 	// 设置连接超时
 	dialer := websocket.Dialer{
 		HandshakeTimeout: c.timeout,
-		ReadBufferSize:  c.bufferSize,
-		WriteBufferSize: c.bufferSize,
+		ReadBufferSize:   c.bufferSize,
+		WriteBufferSize:  c.bufferSize,
 	}
 
-	conn, _, err := dialer.Dial(u.String(), nil)
+	conn, _, err := dialer.Dial(u.String(), headers)
 	if err != nil {
 		return fmt.Errorf("WebSocket连接失败: %w", err)
 	}
@@ -86,7 +92,7 @@ func (c *WebSocketClient) Connect() error {
 // receiveMessages 接收消息
 func (c *WebSocketClient) receiveMessages() {
 	defer c.cancel()
-	
+
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -123,6 +129,15 @@ func (c *WebSocketClient) SendText(message string) error {
 	}
 
 	return nil
+}
+
+// SendJson 发送JSON消息
+func (c *WebSocketClient) SendJson(payload interface{}) error {
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("JSON序列化失败: %w", err)
+	}
+	return c.SendText(string(jsonData))
 }
 
 // ListenForResponse 监听响应（带过滤条件）
@@ -206,6 +221,45 @@ func (c *WebSocketClient) Close() error {
 	return nil
 }
 
+// ListenForJsonResponse 监听并解析JSON响应
+// filter: 过滤函数，返回true表示匹配
+// 返回匹配的响应列表（已解析为map）
+func (c *WebSocketClient) ListenForJsonResponse(filter func(map[string]interface{}) bool) ([]map[string]interface{}, error) {
+	deadline := time.Now().Add(c.maxDuration)
+	var matched []map[string]interface{}
+
+	for {
+		select {
+		case <-c.ctx.Done():
+			return matched, nil
+		case <-time.After(time.Until(deadline)):
+			// 超时，返回已匹配的响应
+			c.mu.Lock()
+			for _, resp := range c.responses {
+				parsed, err := ParseJsonResponse(resp)
+				if err == nil && filter(parsed) {
+					matched = append(matched, parsed)
+				}
+			}
+			c.mu.Unlock()
+			return matched, nil
+		default:
+			time.Sleep(100 * time.Millisecond)
+			c.mu.Lock()
+			for _, resp := range c.responses {
+				parsed, err := ParseJsonResponse(resp)
+				if err == nil && filter(parsed) {
+					matched = append(matched, parsed)
+				}
+			}
+			c.mu.Unlock()
+			if len(matched) > 0 {
+				return matched, nil
+			}
+		}
+	}
+}
+
 // ParseJsonResponse 解析JSON响应
 func ParseJsonResponse(response string) (map[string]interface{}, error) {
 	var result map[string]interface{}
@@ -214,4 +268,3 @@ func ParseJsonResponse(response string) (map[string]interface{}, error) {
 	}
 	return result, nil
 }
-

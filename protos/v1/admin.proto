@@ -33,9 +33,40 @@ message ChangeUserStatusRequest {
   repeated string user_ids = 2;  // 用户ID数组（请求体）
 }
 
+// GetServerListRequest 获取WebSocket服务端列表请求
+message GetServerListRequest {
+}
+
+// EmitServerActionRequest 通知服务端更新配置请求
+message EmitServerActionRequest {
+  string target_ws = 1 [(validate.rules).string.min_len = 1];  // 目标WebSocket地址
+  string action = 2 [(validate.rules).string.min_len = 1];  // 操作类型：restart 或 update_config
+}
+
 // AdminService 管理员管理服务
 service AdminService {
   // ========== 静态路由（按路径长度和优先级排序）==========
+
+  // GetServerList 获取WebSocket服务端列表
+  rpc GetServerList(GetServerListRequest) returns (Response) {
+    option (google.api.http) = {
+      get: "/admin/server/server-list"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取WebSocket服务端列表";
+    };
+  }
+
+  // EmitServerAction 通知服务端更新配置
+  rpc EmitServerAction(EmitServerActionRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/admin/server/emit-action"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "通知服务端更新配置";
+    };
+  }
 
   // ChangeUserStatus 批量修改用户状态
   rpc ChangeUserStatus(ChangeUserStatusRequest) returns (Response) {
