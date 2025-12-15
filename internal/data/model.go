@@ -191,6 +191,21 @@ func (r *modelConfigRepo) GetModelConfigByID(ctx context.Context, id string) (*b
 	return bizConfig, nil
 }
 
+// GetModelConfigByIDRaw 获取模型配置（不经过敏感数据处理，返回原始配置）
+func (r *modelConfigRepo) GetModelConfigByIDRaw(ctx context.Context, id string) (*biz.ModelConfig, error) {
+	config, err := r.data.db.ModelConfig.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	bizConfig := r.entityToBiz(config)
+	// 不进行敏感数据掩码处理，直接返回原始配置
+	return bizConfig, nil
+}
+
 // GetRAGModelList 获取RAG模型列表
 func (r *modelConfigRepo) GetRAGModelList(ctx context.Context) ([]*biz.ModelConfig, error) {
 	query := r.data.db.ModelConfig.Query().
@@ -253,19 +268,6 @@ func (r *modelConfigRepo) GetTtsPlatforms(ctx context.Context) ([]*biz.TtsPlatfo
 	}
 
 	return result, nil
-}
-
-// GetModelConfigByIDRaw 获取模型配置（不经过敏感数据处理）
-func (r *modelConfigRepo) GetModelConfigByIDRaw(ctx context.Context, id string) (*biz.ModelConfig, error) {
-	config, err := r.data.db.ModelConfig.Get(ctx, id)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return r.entityToBiz(config), nil
 }
 
 // CreateModelConfig 创建模型配置

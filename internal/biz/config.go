@@ -638,8 +638,8 @@ func (uc *ConfigUsecase) buildModuleConfig(ctx context.Context, template *AgentT
 
 		modelType := modelTypes[i]
 
-		// 获取模型配置
-		model, err := uc.modelRepo.GetModelConfigByID(ctx, modelId)
+		// 获取模型配置（使用Raw方法，不进行敏感数据掩码处理，确保获取原始配置）
+		model, err := uc.modelRepo.GetModelConfigByIDRaw(ctx, modelId)
 		if err != nil || model == nil {
 			uc.log.Warn("Model config not found", "modelId", modelId, "modelType", modelType, "error", err)
 			continue
@@ -889,8 +889,8 @@ func (uc *ConfigUsecase) buildModuleConfigForAgent(
 
 		modelType := modelTypes[i]
 
-		// 获取模型配置（不使用缓存，确保获取原始密钥）
-		model, err := uc.modelRepo.GetModelConfigByID(ctx, modelId)
+		// 获取模型配置（使用Raw方法，不进行敏感数据掩码处理，确保获取原始配置，与Java版本保持一致）
+		model, err := uc.modelRepo.GetModelConfigByIDRaw(ctx, modelId)
 		if err != nil || model == nil {
 			uc.log.Warn("Model config not found", "modelId", modelId, "modelType", modelType, "error", err)
 			continue
@@ -982,7 +982,7 @@ func (uc *ConfigUsecase) buildModuleConfigForAgent(
 			// 添加 Intent 的附加 LLM 模型
 			if intentLLMModelId != "" {
 				if _, exists := typeConfig[intentLLMModelId]; !exists {
-					intentLLM, err := uc.modelRepo.GetModelConfigByID(ctx, intentLLMModelId)
+					intentLLM, err := uc.modelRepo.GetModelConfigByIDRaw(ctx, intentLLMModelId)
 					if err == nil && intentLLM != nil {
 						var intentLLMConfig map[string]interface{}
 						if intentLLM.ConfigJSON != "" {
@@ -997,7 +997,7 @@ func (uc *ConfigUsecase) buildModuleConfigForAgent(
 			// 添加 Memory 的附加 LLM 模型
 			if memLocalShortLLMModelId != "" {
 				if _, exists := typeConfig[memLocalShortLLMModelId]; !exists {
-					memLocalShortLLM, err := uc.modelRepo.GetModelConfigByID(ctx, memLocalShortLLMModelId)
+					memLocalShortLLM, err := uc.modelRepo.GetModelConfigByIDRaw(ctx, memLocalShortLLMModelId)
 					if err == nil && memLocalShortLLM != nil {
 						var memLocalShortLLMConfig map[string]interface{}
 						if memLocalShortLLM.ConfigJSON != "" {

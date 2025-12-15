@@ -18,19 +18,26 @@ import (
 	kratoshttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
+// handleCORS 处理CORS头和OPTIONS预检请求
+// 如果返回true，表示已经处理了OPTIONS请求，调用者应该直接返回
+func handleCORS(w http.ResponseWriter, r *http.Request, allowedMethods string, allowedHeaders string) bool {
+	// 设置CORS响应头
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", allowedMethods)
+	w.Header().Set("Access-Control-Allow-Headers", allowedHeaders)
+	w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Type")
+	w.Header().Set("Access-Control-Max-Age", "3600")
+
+	// 处理OPTIONS预检请求
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return true
+	}
+	return false
+}
+
 // DownloadOtaHandler 处理固件下载的HTTP handler
 func (s *OtaService) DownloadOtaHandler(w http.ResponseWriter, r *http.Request) {
-	// 设置CORS头
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-	// 处理OPTIONS请求
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	// 只允许GET请求
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -80,17 +87,6 @@ func (s *OtaService) DownloadOtaHandler(w http.ResponseWriter, r *http.Request) 
 
 // UploadFirmwareHandler 处理固件上传的HTTP handler
 func (s *OtaService) UploadFirmwareHandler(w http.ResponseWriter, r *http.Request) {
-	// 设置CORS头
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-	// 处理OPTIONS请求
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	// 只允许POST请求
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -233,17 +229,6 @@ func (s *OtaService) UploadFirmwareHandler(w http.ResponseWriter, r *http.Reques
 
 // CheckOTAVersionHandler 处理 POST /ota/ - OTA版本和设备激活检查
 func (s *OtaService) CheckOTAVersionHandler(w http.ResponseWriter, r *http.Request) {
-	// 设置CORS头
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Device-Id, Client-Id")
-
-	// 处理OPTIONS请求
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	// 只允许POST请求
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -292,17 +277,6 @@ func (s *OtaService) CheckOTAVersionHandler(w http.ResponseWriter, r *http.Reque
 
 // ActivateDeviceHandler 处理 POST /ota/activate - 快速检查激活状态
 func (s *OtaService) ActivateDeviceHandler(w http.ResponseWriter, r *http.Request) {
-	// 设置CORS头
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Device-Id, Client-Id")
-
-	// 处理OPTIONS请求
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	// 只允许POST请求
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -335,17 +309,6 @@ func (s *OtaService) ActivateDeviceHandler(w http.ResponseWriter, r *http.Reques
 
 // GetOTAHealthHandler 处理 GET /ota - OTA健康检查
 func (s *OtaService) GetOTAHealthHandler(w http.ResponseWriter, r *http.Request) {
-	// 设置CORS头
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-	// 处理OPTIONS请求
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	// 只允许GET请求
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -391,13 +354,19 @@ func (s *OtaService) writeJSONResponse(w http.ResponseWriter, response *biz.Devi
 // RegisterOtaHTTPHandlers 注册OTA的HTTP handlers
 func RegisterOtaHTTPHandlers(srv *kratoshttp.Server, otaService *OtaService) {
 	// 注意：静态路由必须在动态路由之前注册，防止路由被覆盖
-	// 1. 静态路由：/ota/activate (POST)
+	// 1. 静态路由：/ota/activate (POST/OPTIONS)
 	srv.HandleFunc("/ota/activate", func(w http.ResponseWriter, r *http.Request) {
+		if handleCORS(w, r, "POST, OPTIONS", "Content-Type, Device-Id, Client-Id") {
+			return
+		}
 		otaService.ActivateDeviceHandler(w, r)
 	})
 
-	// 2. 静态路由：/ota/ (GET) - 健康检查
+	// 2. 静态路由：/ota (GET/POST/OPTIONS)
 	srv.HandleFunc("/ota", func(w http.ResponseWriter, r *http.Request) {
+		if handleCORS(w, r, "GET, POST, OPTIONS", "Content-Type, Device-Id, Client-Id") {
+			return
+		}
 		if r.Method == "GET" {
 			otaService.GetOTAHealthHandler(w, r)
 		} else if r.Method == "POST" {
@@ -409,10 +378,16 @@ func RegisterOtaHTTPHandlers(srv *kratoshttp.Server, otaService *OtaService) {
 
 	// 3. OTA固件管理相关路由（静态路由放在前面）
 	srv.HandlePrefix("/otaMag/download", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if handleCORS(w, r, "GET, OPTIONS", "Content-Type") {
+			return
+		}
 		otaService.DownloadOtaHandler(w, r)
 	}))
 
 	srv.HandleFunc("/otaMag/upload", func(w http.ResponseWriter, r *http.Request) {
+		if handleCORS(w, r, "POST, OPTIONS", "Content-Type, Authorization") {
+			return
+		}
 		otaService.UploadFirmwareHandler(w, r)
 	})
 }
