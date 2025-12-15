@@ -119,7 +119,7 @@
 
 | 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 | 状态 |
 |------|------|------|------|------|----------|------|
-| 7 | POST | `/config/agent-models` | **获取智能体模型** - 根据设备MAC返回模型配置 | 公开 | 3天 | ⏳ 进行中 |
+| 7 | POST | `/config/agent-models` | **获取智能体模型** - 根据设备MAC返回模型配置 | 公开 | 3天 | ⏳ 已完成 |
 | 8 | POST | `/ota/` | OTA版本和设备激活检查 | 公开 | 1天 | ❌ 未开始 |
 | 9 | POST | `/ota/activate` | 快速检查激活状态 | 公开 | 0.5天 | ❌ 未开始 |
 | 10 | GET | `/ota/` | OTA健康检查 | 公开 | 0.5天 | ❌ 未开始 |
@@ -302,8 +302,8 @@
 | 91 | GET | `/admin/dict/data/type/{dictType}` | 获取字典数据列表 | 普通用户 | 0.5天 | ✅ 已完成 |
 
 **服务端管理**:
-| 92 | GET | `/admin/server/server-list` | 获取 WebSocket 服务端列表 | 超级管理员 | 0.5天 | ⚠️待测试
-| 93 | POST | `/admin/server/emit-action` | 通知服务端更新配置 | 超级管理员 | 1天 | ⚠️待测试
+| 92 | GET | `/admin/server/server-list` | 获取 WebSocket 服务端列表 | 超级管理员 | 0.5天 | ✅ 已完成
+| 93 | POST | `/admin/server/emit-action` | 通知服务端更新配置 | 超级管理员 | 1天 | ✅ 已完成
 
 **OTA 固件管理**:
 | 94 | GET | `/otaMag` | 分页查询固件 | 超级管理员 | 0.5天 | ✅ 已完成 |

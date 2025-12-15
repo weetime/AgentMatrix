@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/weetime/agent-matrix/internal/constant"
 	"github.com/weetime/agent-matrix/internal/kit"
 	"github.com/weetime/agent-matrix/internal/kit/cerrors"
 
@@ -48,29 +50,41 @@ type ConfigRepo interface {
 
 // ConfigUsecase 配置业务逻辑
 type ConfigUsecase struct {
-	repo        ConfigRepo
-	agentRepo   AgentRepo
-	modelRepo   ModelConfigRepo
-	redisClient *kit.RedisClient
-	handleError *cerrors.HandleError
-	log         *log.Helper
+	repo              ConfigRepo
+	agentRepo         AgentRepo
+	deviceUsecase     *DeviceUsecase
+	modelRepo         ModelConfigRepo
+	ttsVoiceUsecase   *TtsVoiceUsecase
+	voiceCloneUsecase *VoiceCloneUsecase
+	voicePrintRepo    AgentVoicePrintRepo
+	redisClient       *kit.RedisClient
+	handleError       *cerrors.HandleError
+	log               *log.Helper
 }
 
 // NewConfigUsecase 创建配置用例
 func NewConfigUsecase(
 	repo ConfigRepo,
 	agentRepo AgentRepo,
+	deviceUsecase *DeviceUsecase,
 	modelRepo ModelConfigRepo,
+	ttsVoiceUsecase *TtsVoiceUsecase,
+	voiceCloneUsecase *VoiceCloneUsecase,
+	voicePrintRepo AgentVoicePrintRepo,
 	redisClient *kit.RedisClient,
 	logger log.Logger,
 ) *ConfigUsecase {
 	return &ConfigUsecase{
-		repo:        repo,
-		agentRepo:   agentRepo,
-		modelRepo:   modelRepo,
-		redisClient: redisClient,
-		handleError: cerrors.NewHandleError(logger),
-		log:         kit.LogHelper(logger),
+		repo:              repo,
+		agentRepo:         agentRepo,
+		deviceUsecase:     deviceUsecase,
+		modelRepo:         modelRepo,
+		ttsVoiceUsecase:   ttsVoiceUsecase,
+		voiceCloneUsecase: voiceCloneUsecase,
+		voicePrintRepo:    voicePrintRepo,
+		redisClient:       redisClient,
+		handleError:       cerrors.NewHandleError(logger),
+		log:               kit.LogHelper(logger),
 	}
 }
 
@@ -464,8 +478,8 @@ func (uc *ConfigUsecase) validateOtaUrl(url string) error {
 	}
 
 	// 必须以/ota/结尾
-	if !strings.HasSuffix(url, "/ota/") {
-		return fmt.Errorf("OTA地址必须以/ota/结尾")
+	if !strings.HasSuffix(url, "/ota") {
+		return fmt.Errorf("OTA地址必须以/ota结尾")
 	}
 
 	// TODO: 连接测试（需要实现HTTP请求测试）
@@ -669,4 +683,447 @@ func (uc *ConfigUsecase) buildModuleConfig(ctx context.Context, template *AgentT
 	config["summaryMemory"] = nil
 
 	return nil
+}
+
+// GetAgentModels 获取智能体模型配置
+// 对应 Java 的 ConfigServiceImpl.getAgentModels 方法
+func (uc *ConfigUsecase) GetAgentModels(ctx context.Context, macAddress string, selectedModule map[string]string) (map[string]interface{}, error) {
+	// 1. 根据MAC地址查找设备
+	device, err := uc.deviceUsecase.GetDeviceByMacAddress(ctx, macAddress)
+	if err != nil {
+		return nil, uc.handleError.ErrInternal(ctx, err)
+	}
+
+	if device == nil {
+		// 如果设备不存在，检查 Redis 中是否有需要绑定的设备
+		cachedCode, err := uc.deviceUsecase.GeCodeByDeviceId(ctx, macAddress)
+		if err != nil {
+			return nil, uc.handleError.ErrInternal(ctx, err)
+		}
+		if cachedCode != "" {
+			// 抛出需要绑定的异常（错误码 10042）
+			return nil, fmt.Errorf("设备需要绑定，激活码: %s", cachedCode)
+		}
+		// 抛出设备未找到异常（错误码 10041）
+		return nil, fmt.Errorf("设备未找到")
+	}
+
+	// 2. 获取智能体信息
+	agent, pluginMappings, err := uc.agentRepo.GetAgentByID(ctx, device.AgentID)
+	if err != nil {
+		return nil, uc.handleError.ErrInternal(ctx, err)
+	}
+	if agent == nil {
+		// 抛出智能体未找到异常（错误码 10053）
+		return nil, fmt.Errorf("智能体未找到")
+	}
+
+	// 3. 获取音色信息
+	var voice, referenceAudio, referenceText string
+	if agent.TTSVoiceID != "" {
+		// 优先从 TtsVoice 获取
+		ttsVoice, err := uc.ttsVoiceUsecase.GetTtsVoiceByID(ctx, agent.TTSVoiceID)
+		if err == nil && ttsVoice != nil {
+			voice = ttsVoice.TtsVoice
+			referenceAudio = ttsVoice.ReferenceAudio
+			referenceText = ttsVoice.ReferenceText
+		} else {
+			// 如果音色不存在，从 VoiceClone 获取
+			voiceClone, err := uc.voiceCloneUsecase.GetVoiceCloneByID(ctx, agent.TTSVoiceID)
+			if err == nil && voiceClone != nil {
+				voice = voiceClone.VoiceID
+			}
+		}
+	}
+
+	// 4. 构建返回数据
+	result := make(map[string]interface{})
+
+	// 4.1 获取单台设备每天最多输出字数
+	deviceMaxOutputSize, err := uc.GetValue(ctx, "device_max_output_size", true)
+	if err == nil && deviceMaxOutputSize != "" {
+		result["device_max_output_size"] = deviceMaxOutputSize
+	}
+
+	// 4.2 获取聊天记录配置
+	chatHistoryConf := int(agent.ChatHistoryConf)
+	if agent.MemModelID != "" && agent.MemModelID == constant.MemoryNoMem {
+		chatHistoryConf = constant.ChatHistoryConfIgnore
+	} else if agent.MemModelID != "" && agent.MemModelID != constant.MemoryNoMem && agent.ChatHistoryConf == 0 {
+		chatHistoryConf = constant.ChatHistoryConfRecordTextAudio
+	}
+	result["chat_history_conf"] = chatHistoryConf
+
+	// 4.3 如果客户端已实例化模型，则不返回
+	if selectedModule != nil {
+		if alreadySelectedVadModelId, ok := selectedModule["VAD"]; ok && alreadySelectedVadModelId == agent.VADModelID {
+			agent.VADModelID = ""
+		}
+		if alreadySelectedAsrModelId, ok := selectedModule["ASR"]; ok && alreadySelectedAsrModelId == agent.ASRModelID {
+			agent.ASRModelID = ""
+		}
+	}
+
+	// 5. 添加函数调用参数信息
+	if agent.IntentModelID != "" && agent.IntentModelID != "Intent_nointent" {
+		if len(pluginMappings) > 0 {
+			pluginParams := make(map[string]interface{})
+			for _, pm := range pluginMappings {
+				if pm.ProviderCode != "" {
+					pluginParams[pm.ProviderCode] = pm.ParamInfo
+				}
+			}
+			if len(pluginParams) > 0 {
+				result["plugins"] = pluginParams
+			}
+		}
+	}
+
+	// 6. 获取MCP接入点地址
+	mcpEndpoint, err := uc.getAgentMcpAccessAddress(ctx, agent.ID)
+	if err == nil && mcpEndpoint != "" {
+		// 如果地址以 ws 开头，替换 /mcp/ 为 /call/
+		if strings.HasPrefix(mcpEndpoint, "ws") {
+			mcpEndpoint = strings.Replace(mcpEndpoint, "/mcp/", "/call/", 1)
+		}
+		result["mcp_endpoint"] = mcpEndpoint
+	}
+
+	// 7. 获取声纹信息
+	uc.buildVoiceprintConfig(ctx, agent.ID, result)
+
+	// 8. 构建模块配置
+	err = uc.buildModuleConfigForAgent(ctx, agent, voice, referenceAudio, referenceText, result)
+	if err != nil {
+		return nil, uc.handleError.ErrInternal(ctx, err)
+	}
+
+	return result, nil
+}
+
+// buildVoiceprintConfig 构建声纹配置信息
+// 对应 Java 的 ConfigServiceImpl.buildVoiceprintConfig 方法
+func (uc *ConfigUsecase) buildVoiceprintConfig(ctx context.Context, agentId string, result map[string]interface{}) {
+	defer func() {
+		// 声纹配置获取失败时不影响其他功能
+		if r := recover(); r != nil {
+			uc.log.Warn("获取声纹配置失败", "error", r)
+		}
+	}()
+
+	// 获取声纹接口地址
+	voiceprintUrl, err := uc.GetValue(ctx, "server.voice_print", true)
+	if err != nil || voiceprintUrl == "" || voiceprintUrl == "null" {
+		return
+	}
+
+	// 获取智能体关联的声纹信息（不需要用户权限验证）
+	voicePrints, err := uc.voicePrintRepo.ListAgentVoicePrintsByAgentID(ctx, agentId)
+	if err != nil || voicePrints == nil || len(voicePrints) == 0 {
+		return
+	}
+
+	// 构建speakers列表
+	speakers := make([]string, 0, len(voicePrints))
+	for _, vp := range voicePrints {
+		introduce := ""
+		if vp.Introduce != "" {
+			introduce = vp.Introduce
+		}
+		speakerStr := fmt.Sprintf("%s,%s,%s", vp.ID, vp.SourceName, introduce)
+		speakers = append(speakers, speakerStr)
+	}
+
+	// 构建声纹配置
+	voiceprintConfig := make(map[string]interface{})
+	voiceprintConfig["url"] = voiceprintUrl
+	voiceprintConfig["speakers"] = speakers
+
+	// 获取声纹识别相似度阈值，默认0.4
+	thresholdStr, err := uc.GetValue(ctx, "server.voiceprint_similarity_threshold", true)
+	if err == nil && thresholdStr != "" && thresholdStr != "null" {
+		if threshold, err := strconv.ParseFloat(thresholdStr, 64); err == nil {
+			voiceprintConfig["similarity_threshold"] = threshold
+		} else {
+			voiceprintConfig["similarity_threshold"] = 0.4
+		}
+	} else {
+		voiceprintConfig["similarity_threshold"] = 0.4
+	}
+
+	result["voiceprint"] = voiceprintConfig
+}
+
+// buildModuleConfigForAgent 构建智能体的模块配置
+// 对应 Java 的 ConfigServiceImpl.buildModuleConfig 方法（用于智能体）
+func (uc *ConfigUsecase) buildModuleConfigForAgent(
+	ctx context.Context,
+	agent *Agent,
+	voice string,
+	referenceAudio string,
+	referenceText string,
+	result map[string]interface{},
+) error {
+	selectedModule := make(map[string]interface{})
+
+	// 定义模型类型和对应的模型ID
+	modelTypes := []string{"VAD", "ASR", "TTS", "Memory", "Intent", "LLM", "VLLM", "RAG"}
+	modelIds := []string{
+		agent.VADModelID,
+		agent.ASRModelID,
+		agent.TTSModelID,
+		agent.MemModelID,
+		agent.IntentModelID,
+		agent.LLMModelID,
+		agent.VLLMModelID,
+		"", // RAG 模型ID（暂时为空）
+	}
+
+	var intentLLMModelId string
+	var memLocalShortLLMModelId string
+
+	for i, modelId := range modelIds {
+		if modelId == "" {
+			continue
+		}
+
+		modelType := modelTypes[i]
+
+		// 获取模型配置（不使用缓存，确保获取原始密钥）
+		model, err := uc.modelRepo.GetModelConfigByID(ctx, modelId)
+		if err != nil || model == nil {
+			uc.log.Warn("Model config not found", "modelId", modelId, "modelType", modelType, "error", err)
+			continue
+		}
+
+		// 解析模型配置JSON
+		var configJSON map[string]interface{}
+		if model.ConfigJSON != "" {
+			if err := json.Unmarshal([]byte(model.ConfigJSON), &configJSON); err != nil {
+				uc.log.Warn("Failed to parse model config JSON", "modelId", modelId, "error", err)
+				continue
+			}
+		} else {
+			configJSON = make(map[string]interface{})
+		}
+
+		// 构建类型配置
+		typeConfig := make(map[string]interface{})
+		typeConfig[model.ID] = configJSON
+
+		// TTS 特殊处理：注入音色信息
+		if modelType == "TTS" {
+			if voice != "" {
+				configJSON["private_voice"] = voice
+			}
+			if referenceAudio != "" {
+				configJSON["ref_audio"] = referenceAudio
+			}
+			if referenceText != "" {
+				configJSON["ref_text"] = referenceText
+			}
+
+			// 火山引擎声音克隆需要替换resource_id
+			if modelTypeValue, ok := configJSON["type"].(string); ok {
+				if modelTypeValue == constant.VoiceCloneHuoshanDoubleStream {
+					// 如果voice是"S_"开头的，使用seed-icl-1.0
+					if voice != "" && strings.HasPrefix(voice, "S_") {
+						configJSON["resource_id"] = "seed-icl-1.0"
+					}
+				}
+			}
+		}
+
+		// Intent 特殊处理
+		if modelType == "Intent" {
+			if modelTypeValue, ok := configJSON["type"].(string); ok {
+				if modelTypeValue == "intent_llm" {
+					if llmModelId, ok := configJSON["llm"].(string); ok && llmModelId != "" {
+						intentLLMModelId = llmModelId
+						// 如果与主LLM模型相同，则不需要附加
+						if intentLLMModelId == agent.LLMModelID {
+							intentLLMModelId = ""
+						}
+					}
+				}
+			}
+
+			// 处理 functions 字段：将分号分隔的字符串转换为数组
+			if functionsStr, ok := configJSON["functions"].(string); ok && functionsStr != "" {
+				functions := strings.Split(functionsStr, ";")
+				// 过滤空字符串
+				filteredFunctions := make([]string, 0, len(functions))
+				for _, f := range functions {
+					if strings.TrimSpace(f) != "" {
+						filteredFunctions = append(filteredFunctions, strings.TrimSpace(f))
+					}
+				}
+				configJSON["functions"] = filteredFunctions
+			}
+		}
+
+		// Memory 特殊处理
+		if modelType == "Memory" {
+			if modelTypeValue, ok := configJSON["type"].(string); ok {
+				if modelTypeValue == "mem_local_short" {
+					if llmModelId, ok := configJSON["llm"].(string); ok && llmModelId != "" {
+						memLocalShortLLMModelId = llmModelId
+						// 如果与主LLM模型相同，则不需要附加
+						if memLocalShortLLMModelId == agent.LLMModelID {
+							memLocalShortLLMModelId = ""
+						}
+					}
+				}
+			}
+		}
+
+		// LLM 特殊处理：添加附加模型
+		if modelType == "LLM" {
+			// 添加 Intent 的附加 LLM 模型
+			if intentLLMModelId != "" {
+				if _, exists := typeConfig[intentLLMModelId]; !exists {
+					intentLLM, err := uc.modelRepo.GetModelConfigByID(ctx, intentLLMModelId)
+					if err == nil && intentLLM != nil {
+						var intentLLMConfig map[string]interface{}
+						if intentLLM.ConfigJSON != "" {
+							if err := json.Unmarshal([]byte(intentLLM.ConfigJSON), &intentLLMConfig); err == nil {
+								typeConfig[intentLLM.ID] = intentLLMConfig
+							}
+						}
+					}
+				}
+			}
+
+			// 添加 Memory 的附加 LLM 模型
+			if memLocalShortLLMModelId != "" {
+				if _, exists := typeConfig[memLocalShortLLMModelId]; !exists {
+					memLocalShortLLM, err := uc.modelRepo.GetModelConfigByID(ctx, memLocalShortLLMModelId)
+					if err == nil && memLocalShortLLM != nil {
+						var memLocalShortLLMConfig map[string]interface{}
+						if memLocalShortLLM.ConfigJSON != "" {
+							if err := json.Unmarshal([]byte(memLocalShortLLM.ConfigJSON), &memLocalShortLLMConfig); err == nil {
+								typeConfig[memLocalShortLLM.ID] = memLocalShortLLMConfig
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// 将类型配置添加到结果中
+		if existing, ok := result[modelType].(map[string]interface{}); ok {
+			// 如果已存在，合并配置
+			for k, v := range typeConfig {
+				existing[k] = v
+			}
+			result[modelType] = existing
+		} else {
+			result[modelType] = typeConfig
+		}
+
+		// 添加到selected_module
+		selectedModule[modelType] = model.ID
+	}
+
+	// 添加selected_module到配置
+	result["selected_module"] = selectedModule
+
+	// 处理 prompt：替换 {{assistant_name}}
+	prompt := agent.SystemPrompt
+	if prompt != "" {
+		assistantName := agent.AgentName
+		if assistantName == "" {
+			assistantName = "小智"
+		}
+		prompt = strings.ReplaceAll(prompt, "{{assistant_name}}", assistantName)
+	}
+	result["prompt"] = prompt
+	result["summaryMemory"] = agent.SummaryMemory
+
+	return nil
+}
+
+// getAgentMcpAccessAddress 获取智能体的MCP接入点地址
+// 对应 Java 的 AgentMcpAccessPointService.getAgentMcpAccessAddress 方法
+func (uc *ConfigUsecase) getAgentMcpAccessAddress(ctx context.Context, agentId string) (string, error) {
+	// 获取MCP地址配置
+	mcpUrl, err := uc.GetValue(ctx, "server.mcp_endpoint", true)
+	if err != nil {
+		return "", fmt.Errorf("获取MCP配置失败: %w", err)
+	}
+
+	if mcpUrl == "" || mcpUrl == "null" {
+		return "", nil
+	}
+
+	// 解析URI
+	parsedURL, err := url.Parse(mcpUrl)
+	if err != nil {
+		return "", fmt.Errorf("mcp的地址存在错误，请进入参数管理修改mcp接入点地址: %w", err)
+	}
+
+	// 获取智能体mcp的url前缀
+	agentMcpUrl := uc.getAgentMcpUrl(parsedURL)
+
+	// 获取密钥
+	key := uc.getSecretKey(parsedURL)
+
+	// 获取加密的token
+	encryptToken, err := uc.encryptToken(agentId, key)
+	if err != nil {
+		return "", fmt.Errorf("加密token失败: %w", err)
+	}
+
+	// 对token进行URL编码
+	encodedToken := url.QueryEscape(encryptToken)
+
+	// 返回智能体Mcp路径的格式
+	agentMcpUrl = fmt.Sprintf("%s/mcp/?token=%s", agentMcpUrl, encodedToken)
+	return agentMcpUrl, nil
+}
+
+// getSecretKey 获取密钥
+func (uc *ConfigUsecase) getSecretKey(parsedURL *url.URL) string {
+	query := parsedURL.RawQuery
+	keyPrefix := "key="
+	keyIndex := strings.Index(query, keyPrefix)
+	if keyIndex == -1 {
+		return ""
+	}
+	return query[keyIndex+len(keyPrefix):]
+}
+
+// getAgentMcpUrl 获取智能体mcp接入点url
+func (uc *ConfigUsecase) getAgentMcpUrl(parsedURL *url.URL) string {
+	// 获取协议
+	var wsScheme string
+	if parsedURL.Scheme == "https" {
+		wsScheme = "wss"
+	} else {
+		wsScheme = "ws"
+	}
+
+	// 获取主机和路径
+	host := parsedURL.Host
+	path := parsedURL.Path
+
+	// 获取到最后一个/前的path
+	lastSlashIndex := strings.LastIndex(path, "/")
+	if lastSlashIndex != -1 {
+		path = path[:lastSlashIndex]
+	}
+
+	return fmt.Sprintf("%s://%s%s", wsScheme, host, path)
+}
+
+// encryptToken 获取对智能体id加密的token
+func (uc *ConfigUsecase) encryptToken(agentId, key string) (string, error) {
+	// 使用md5对智能体id进行加密
+	md5 := kit.MD5HexDigest(agentId)
+
+	// aes需要加密文本
+	jsonStr := fmt.Sprintf(`{"agentId": "%s"}`, md5)
+
+	// 加密后成token值（注意：AESEncrypt的参数顺序是key, plaintext）
+	return kit.AESEncrypt(key, jsonStr)
 }

@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/weetime/agent-matrix/internal/kit"
@@ -46,6 +47,7 @@ type DeviceRepo interface {
 // DeviceUsecase 设备业务逻辑
 type DeviceUsecase struct {
 	repo        DeviceRepo
+	redisClient *kit.RedisClient
 	handleError *cerrors.HandleError
 	log         *log.Helper
 }
@@ -53,10 +55,12 @@ type DeviceUsecase struct {
 // NewDeviceUsecase 创建设备用例
 func NewDeviceUsecase(
 	repo DeviceRepo,
+	redisClient *kit.RedisClient,
 	logger log.Logger,
 ) *DeviceUsecase {
 	return &DeviceUsecase{
 		repo:        repo,
+		redisClient: redisClient,
 		handleError: cerrors.NewHandleError(logger),
 		log:         log.NewHelper(log.With(logger, "module", "agent-matrix-service/biz/device")),
 	}
@@ -212,4 +216,34 @@ func (uc *DeviceUsecase) GetDeviceByMacAddress(ctx context.Context, macAddress s
 		return nil, uc.handleError.ErrInternal(ctx, err)
 	}
 	return device, nil
+}
+
+// GeCodeByDeviceId 从 Redis 获取设备激活码
+// 对应 Java 的 deviceService.geCodeByDeviceId 方法
+func (uc *DeviceUsecase) GeCodeByDeviceId(ctx context.Context, deviceId string) (string, error) {
+	if deviceId == "" {
+		return "", nil
+	}
+
+	// 构建 Redis Key: ota:activation:data:{deviceId}
+	// deviceId 需要替换 : 为 _ 并转小写
+	safeDeviceId := strings.ToLower(strings.ReplaceAll(deviceId, ":", "_"))
+	redisKey := fmt.Sprintf("ota:activation:data:%s", safeDeviceId)
+
+	// 从 Redis 获取 Map
+	var cacheMap map[string]interface{}
+	err := uc.redisClient.GetObject(ctx, redisKey, &cacheMap)
+	if err != nil {
+		// Redis 中没有数据，返回空字符串（不是错误）
+		return "", nil
+	}
+
+	// 获取 activation_code 字段
+	if cacheMap != nil {
+		if code, ok := cacheMap["activation_code"].(string); ok {
+			return code, nil
+		}
+	}
+
+	return "", nil
 }

@@ -16,12 +16,29 @@ service ConfigService {
       body: "*"
     };
   }
+  // GetAgentModels 获取智能体模型配置
+  rpc GetAgentModels(GetAgentModelsRequest) returns (Response) {
+    option (google.api.http) = {
+      post: "/config/agent-models"
+      body: "*"
+    };
+  }
 }
 
 // GetServerConfigRequest 获取服务器配置请求
 message GetServerConfigRequest {
   // is_cache 是否从缓存读取（可选，默认 true）
   google.protobuf.BoolValue is_cache = 1;
+}
+
+// GetAgentModelsRequest 获取智能体模型配置请求
+message GetAgentModelsRequest {
+  // mac_address 设备MAC地址
+  string mac_address = 1;
+  // client_id 客户端ID
+  string client_id = 2;
+  // selected_module 客户端已实例化的模型
+  map<string, string> selected_module = 3;
 }
 
 

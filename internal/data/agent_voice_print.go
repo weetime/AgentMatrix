@@ -133,6 +133,24 @@ func (r *agentVoicePrintRepo) ListAgentVoicePrintIDsByAgentID(ctx context.Contex
 	return ids, nil
 }
 
+// ListAgentVoicePrintsByAgentID 根据智能体ID获取声纹列表（不需要用户权限验证）
+func (r *agentVoicePrintRepo) ListAgentVoicePrintsByAgentID(ctx context.Context, agentId string) ([]*biz.AgentVoicePrint, error) {
+	entities, err := r.data.db.AgentVoicePrint.Query().
+		Where(agentvoiceprint.AgentIDEQ(agentId)).
+		Order(ent.Asc(agentvoiceprint.FieldCreateDate)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*biz.AgentVoicePrint, len(entities))
+	for i, e := range entities {
+		result[i] = r.toBizAgentVoicePrint(e)
+	}
+
+	return result, nil
+}
+
 // toBizAgentVoicePrint 转换为业务实体
 func (r *agentVoicePrintRepo) toBizAgentVoicePrint(entity *ent.AgentVoicePrint) *biz.AgentVoicePrint {
 	return &biz.AgentVoicePrint{

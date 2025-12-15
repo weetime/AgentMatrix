@@ -47,6 +47,8 @@ type AgentVoicePrintRepo interface {
 	ListAgentVoicePrints(ctx context.Context, agentId string, userId int64) ([]*AgentVoicePrint, error)
 	GetAgentVoicePrintByID(ctx context.Context, id string) (*AgentVoicePrint, error)
 	ListAgentVoicePrintIDsByAgentID(ctx context.Context, agentId string) ([]string, error)
+	// ListAgentVoicePrintsByAgentID 根据智能体ID获取声纹列表（不需要用户权限验证）
+	ListAgentVoicePrintsByAgentID(ctx context.Context, agentId string) ([]*AgentVoicePrint, error)
 }
 
 // AgentVoicePrintUsecase 智能体声纹业务逻辑

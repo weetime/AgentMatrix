@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/weetime/agent-matrix/internal/biz"
 	"github.com/weetime/agent-matrix/internal/constant"
 	"github.com/weetime/agent-matrix/internal/middleware"
 	pb "github.com/weetime/agent-matrix/protos/v1"
@@ -230,11 +231,184 @@ func (s *OtaService) UploadFirmwareHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+// CheckOTAVersionHandler 处理 POST /ota/ - OTA版本和设备激活检查
+func (s *OtaService) CheckOTAVersionHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置CORS头
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Device-Id, Client-Id")
+
+	// 处理OPTIONS请求
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// 只允许POST请求
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+
+	// 从Header获取Device-Id和Client-Id
+	deviceId := r.Header.Get("Device-Id")
+	clientId := r.Header.Get("Client-Id")
+
+	// 读取请求体
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		response := &biz.DeviceReportRespDTO{
+			Error: "Failed to read request body",
+		}
+		s.writeJSONResponse(w, response, http.StatusBadRequest)
+		return
+	}
+
+	// 解析JSON请求体
+	var deviceReport biz.DeviceReportReqDTO
+	if err := json.Unmarshal(body, &deviceReport); err != nil {
+		response := &biz.DeviceReportRespDTO{
+			Error: "Invalid request body",
+		}
+		s.writeJSONResponse(w, response, http.StatusBadRequest)
+		return
+	}
+
+	// 调用service层内部方法
+	response, err := s.checkOTAVersionInternal(ctx, deviceId, clientId, &deviceReport)
+	if err != nil {
+		response = &biz.DeviceReportRespDTO{
+			Error: err.Error(),
+		}
+		s.writeJSONResponse(w, response, http.StatusInternalServerError)
+		return
+	}
+
+	// 返回JSON响应（使用JsonInclude.Include.NON_NULL策略，即omitempty）
+	s.writeJSONResponse(w, response, http.StatusOK)
+}
+
+// ActivateDeviceHandler 处理 POST /ota/activate - 快速检查激活状态
+func (s *OtaService) ActivateDeviceHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置CORS头
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Device-Id, Client-Id")
+
+	// 处理OPTIONS请求
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// 只允许POST请求
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+
+	// 从Header获取Device-Id
+	deviceId := r.Header.Get("Device-Id")
+
+	// 调用service层内部方法
+	activated, err := s.activateDeviceInternal(ctx, deviceId)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if !activated {
+		// 设备不存在，返回202状态码
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
+
+	// 设备存在，返回"success"
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("success"))
+}
+
+// GetOTAHealthHandler 处理 GET /ota - OTA健康检查
+func (s *OtaService) GetOTAHealthHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置CORS头
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	// 处理OPTIONS请求
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// 只允许GET请求
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+
+	// 调用service层内部方法
+	message, err := s.getOTAHealthInternal(ctx)
+	if err != nil {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("OTA接口异常"))
+		return
+	}
+
+	// 返回文本响应
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(message))
+}
+
+// writeJSONResponse 写入JSON响应（使用omitempty策略）
+func (s *OtaService) writeJSONResponse(w http.ResponseWriter, response *biz.DeviceReportRespDTO, statusCode int) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(statusCode)
+
+	// 使用json.Marshal，Go的omitempty标签会自动处理空值
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		// 如果序列化失败，返回错误响应
+		errorResponse := map[string]string{
+			"error": "Failed to serialize response",
+		}
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	w.Write(jsonData)
+}
+
 // RegisterOtaHTTPHandlers 注册OTA的HTTP handlers
 func RegisterOtaHTTPHandlers(srv *kratoshttp.Server, otaService *OtaService) {
-	// 注意：静态路由（/download/{uuid} 和 /upload）必须在动态路由（/{id}）之前注册
-	// 使用HandlePrefix注册自定义handler，匹配/otaMag/download/开头的所有路径
-	srv.HandlePrefix("/otaMag/download/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 注意：静态路由必须在动态路由之前注册，防止路由被覆盖
+	// 1. 静态路由：/ota/activate (POST)
+	srv.HandleFunc("/ota/activate", func(w http.ResponseWriter, r *http.Request) {
+		otaService.ActivateDeviceHandler(w, r)
+	})
+
+	// 2. 静态路由：/ota/ (GET) - 健康检查
+	srv.HandleFunc("/ota", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			otaService.GetOTAHealthHandler(w, r)
+		} else if r.Method == "POST" {
+			otaService.CheckOTAVersionHandler(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// 3. OTA固件管理相关路由（静态路由放在前面）
+	srv.HandlePrefix("/otaMag/download", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		otaService.DownloadOtaHandler(w, r)
 	}))
 

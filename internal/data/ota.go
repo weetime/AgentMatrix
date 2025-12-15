@@ -263,3 +263,28 @@ func (r *otaRepo) Delete(ctx context.Context, ids []string) error {
 		Exec(ctx)
 	return err
 }
+
+// GetLatestOta 根据类型获取最新OTA固件
+func (r *otaRepo) GetLatestOta(ctx context.Context, otaType string) (*biz.Ota, error) {
+	if otaType == "" {
+		return nil, nil
+	}
+
+	entity, err := r.data.db.Ota.Query().
+		Where(ota.TypeEQ(otaType)).
+		Order(ent.Desc(ota.FieldUpdateDate)).
+		First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var bizEntity biz.Ota
+	if err := copier.Copy(&bizEntity, entity); err != nil {
+		return nil, err
+	}
+
+	return &bizEntity, nil
+}
