@@ -1,5 +1,7 @@
 # Manager-API Java 到 Go 迁移计划
 
+> **📊 最新分析报告**: 请查看 [API_MIGRATION_ANALYSIS.md](./API_MIGRATION_ANALYSIS.md) 获取详细的 API 迁移状态分析和未迁移 API 清单。
+
 ## 一、项目概览
 
 ### 1.1 Java 项目分析 (manager-api)
@@ -205,9 +207,9 @@
 
 **智能体模板管理**:
 | 40 | GET | `/agent/template/page` | 分页查询模板 | 超级管理员 | 0.5天 | ✅ 已完成 |
-| 41 | GET | `/agent/template/{id}` | 获取模板详情 | 超级管理员 | 0.5天 | ✅ 已完成|
+| 41 | GET | `/agent/template/{id}` | 获取模板详情 | 超级管理员 | 0.5天 | ✅ 已完成 |
 | 42 | POST | `/agent/template` | 创建模板 | 超级管理员 | 0.5天 | ✅ 已完成 |
-| 43 | PUT | `/agent/template` | 更新模板 | 超级管理员 | 0.5天 | ✅ 已完成|
+| 43 | PUT | `/agent/template` | 更新模板 | 超级管理员 | 0.5天 | ✅ 已完成 |
 | 44 | DELETE | `/agent/template/{id}` | 删除模板 | 超级管理员 | 0.5天 | ✅ 已完成 |
 | 45 | POST | `/agent/template/batch-remove` | 批量删除模板 | 超级管理员 | 0.5天 | ✅ 已完成 |
 
@@ -346,20 +348,20 @@
 | 115 | POST | `/datasets/{dataset_id}/retrieval-test` | 召回测试 | 普通用户 | 1天 | ✅ 已完成 |
 
 **声音克隆管理**:
-| 116 | GET | `/voiceClone` | 分页查询音色资源 | 普通用户 | 0.5天 | ✅ 已完成 |
-| 117 | POST | `/voiceClone/upload` | 上传音频进行声音克隆 | 普通用户 | 1天 | ✅ 已完成 |
-| 118 | POST | `/voiceClone/updateName` | 更新声音克隆名称 | 普通用户 | 0.5天 | ✅ 已完成 |
-| 119 | POST | `/voiceClone/audio/{id}` | 获取音频下载ID | 普通用户 | 0.5天 | ✅ 已完成 |
-| 120 | GET | `/voiceClone/play/{uuid}` | 播放音频 | 公开 | 0.5天 | ✅ 已完成 |
-| 121 | POST | `/voiceClone/cloneAudio` | 复刻音频 | 普通用户 | 1天 | ✅ 已完成 |
+| 116 | GET | `/voiceClone` | 分页查询音色资源 | 普通用户 | 0.5天 | ⚠️ 需验证（proto已定义，需检查实现完整性） |
+| 117 | POST | `/voiceClone/upload` | 上传音频进行声音克隆 | 普通用户 | 1天 | ⚠️ 需验证（proto已定义，需检查实现完整性） |
+| 118 | POST | `/voiceClone/updateName` | 更新声音克隆名称 | 普通用户 | 0.5天 | ⚠️ 需验证（proto已定义，需检查实现完整性） |
+| 119 | POST | `/voiceClone/audio/{id}` | 获取音频下载ID | 普通用户 | 0.5天 | ⚠️ 需验证（proto已定义，需检查实现完整性） |
+| 120 | GET | `/voiceClone/play/{uuid}` | 播放音频 | 公开 | 0.5天 | ⚠️ 需验证（proto已定义，需检查实现完整性） |
+| 121 | POST | `/voiceClone/cloneAudio` | 复刻音频 | 普通用户 | 1天 | ⚠️ 需验证（proto已定义，需检查实现完整性） |
 
 **音色资源管理**:
-| 122 | GET | `/voiceResource` | 分页查询音色资源 | 超级管理员 | 0.5天 | ✅ 已完成 |
-| 123 | GET | `/voiceResource/{id}` | 获取音色资源详情 | 超级管理员 | 0.5天 | ✅ 已完成 |
-| 124 | POST | `/voiceResource` | 新增音色资源 | 超级管理员 | 0.5天 | ✅ 已完成 |
-| 125 | DELETE | `/voiceResource/{id}` | 删除音色资源 | 超级管理员 | 0.5天 | ✅ 已完成 |
-| 126 | GET | `/voiceResource/user/{userId}` | 根据用户ID获取音色资源 | 普通用户 | 0.5天 | ✅ 已完成 |
-| 127 | GET | `/voiceResource/ttsPlatforms` | 获取 TTS 平台列表 | 超级管理员 | 0.5天 | ✅ 已完成 |
+| 122 | GET | `/voiceResource` | 分页查询音色资源 | 超级管理员 | 0.5天 | ❌ 未迁移（需检查是否有proto定义） |
+| 123 | GET | `/voiceResource/{id}` | 获取音色资源详情 | 超级管理员 | 0.5天 | ❌ 未迁移（需检查是否有proto定义） |
+| 124 | POST | `/voiceResource` | 新增音色资源 | 超级管理员 | 0.5天 | ❌ 未迁移（需检查是否有proto定义） |
+| 125 | DELETE | `/voiceResource/{id}` | 删除音色资源 | 超级管理员 | 0.5天 | ❌ 未迁移（需检查是否有proto定义） |
+| 126 | GET | `/voiceResource/user/{userId}` | 根据用户ID获取音色资源 | 普通用户 | 0.5天 | ❌ 未迁移（需检查是否有proto定义） |
+| 127 | GET | `/voiceResource/ttsPlatforms` | 获取 TTS 平台列表 | 超级管理员 | 0.5天 | ❌ 未迁移（需检查是否有proto定义） |
 
 **Phase 7 总计**: 约 12 天（2.5周）
 
@@ -986,21 +988,24 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
 
 ### 10.1 迁移统计
 
-| 项目 | 数量 | 已完成 | 进行中 | 未开始 |
-|------|------|--------|--------|--------|
-| **总 API 数量** | ~127 个 | **39 个** | **1 个** | **87 个** |
-| **Phase 0 (P0)** | 6 个（参数管理 + 配置下发） | ✅ **6 个** | - | - |
-| **Phase 1 (P0)** | 4 个（完整配置下发 + OTA） | - | ⏳ **1 个** | ❌ **3 个** |
-| **Phase 2-3 (P1)** | 15 个（设备管理 + 认证） | ✅ **8 个** | - | ❌ **7 个** |
-| **Phase 4-5 (P2)** | 50 个（智能体 + 模型） | ✅ **14 个** | - | ❌ **36 个** |
-| **Phase 6-7 (P3)** | 52 个（系统管理 + 高级功能） | ✅ **11 个** | - | ❌ **41 个** |
+| 项目 | 数量 | 已完成 | 进行中 | 需验证 | 未迁移 |
+|------|------|--------|--------|--------|--------|
+| **总 API 数量** | ~132 个 | **105 个** | **0 个** | **12 个** | **15 个** |
+| **Phase 0 (P0)** | 6 个（参数管理 + 配置下发） | ✅ **6 个** | - | - | - |
+| **Phase 1 (P0)** | 4 个（完整配置下发 + OTA） | ✅ **4 个** | - | - | - |
+| **Phase 2 (P1)** | 7 个（设备管理） | ✅ **7 个** | - | - | - |
+| **Phase 3 (P1)** | 8 个（认证） | ✅ **8 个** | - | - | - |
+| **Phase 4 (P2)** | 30 个（智能体） | ✅ **30 个** | - | - | - |
+| **Phase 5 (P2)** | 20 个（模型） | ✅ **19 个** | - | - | ⚠️ **1 个部分实现** |
+| **Phase 6 (P3)** | 31 个（系统管理） | ✅ **20 个** | - | ⚠️ **2 个** | ❌ **9 个** |
+| **Phase 7 (P3)** | 26 个（高级功能） | ✅ **14 个** | - | ⚠️ **6 个** | ❌ **6 个** |
 | **预计总工期** | 10-12 周（不含 Phase 7 则 8-10 周） | - | - | - |
 | **Phase 0 交付时间** | 1.5 周内可让参数管理和配置下发正常工作 | ✅ **已完成** | - | - |
 
 ### 10.2 关键里程碑
 
 - ✅ **Week 2**: Phase 0 完成，参数管理和配置下发功能可用
-- ⏳ **Week 3**: Phase 1 进行中，xiaozhi-server 可以正常获取完整配置（部分完成）
+- ✅ **Week 3**: Phase 1 完成，xiaozhi-server 可以正常获取完整配置（4个 API 全部完成）
 - ✅ **Week 5**: Phase 3 完成，用户认证功能可用（8个 API）
 - ⏳ **Week 6-7**: Phase 4 部分完成，智能体基础功能可用（14个 API）
 - ⏳ **Week 9**: Phase 6 部分完成，字典和参数管理功能可用（11个 API）
@@ -1026,21 +1031,22 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
 3. **Phase 4 进度**:
    - ✅ 已实现智能体基础 CRUD API（14个）
    - ✅ 已实现智能体聊天记录相关 API（4个）
-   - ⏳ 待实现智能体模板管理 API（6个）
-   - ⏳ 待实现声纹管理 API（4个）
-   - ⏳ 待实现 MCP 接入点 API（2个）
+   - ✅ 已实现智能体模板管理 API（6个）
+   - ✅ 已实现声纹管理 API（4个）
+   - ✅ 已实现 MCP 接入点 API（2个）
+   - ✅ **Phase 4 全部完成**（30个 API）
 
 4. **Phase 6 进度**:
    - ✅ 已实现字典类型管理 API（5个）
    - ✅ 已实现字典数据管理 API（6个）
    - ✅ 已实现参数管理 API（5个）
-   - ⏳ 待实现管理员管理 API（5个）
-   - ⏳ 待实现服务端管理 API（2个）
-   - ⏳ 待实现 OTA 固件管理 API（8个）
+   - ✅ 已实现管理员管理 API（4个，1个已废弃）
+   - ⚠️ 需验证服务端管理 API（2个）- proto已定义，需检查实现完整性
+   - ✅ 已实现 OTA 固件管理 API（8个）
 
 5. **Phase 1 进度**:
-   - ⏳ 正在实现配置下发 API (`POST /config/agent-models`)
-   - ❌ 待实现 OTA 相关 API（3个）
+   - ✅ 已实现配置下发 API (`POST /config/agent-models`)
+   - ✅ 已实现 OTA 相关 API（3个）- OTA版本检查、激活检查、健康检查
 
 6. **并行工作**:
    - 前端团队可以开始准备 Go 版本的 API 调用
@@ -1049,6 +1055,11 @@ func ForwardToMqttGateway(ctx context.Context, deviceIds []string) (string, erro
 7. **持续集成**:
    - 每个 Phase 完成后立即部署到测试环境
    - 进行集成测试和性能测试
+
+8. **重要发现**（详见 `API_MIGRATION_ANALYSIS.md`）:
+   - ✅ **Phase 4 全部完成**（30个 API 全部实现）
+   - ⚠️ **12个 API** 需要验证实现完整性（Phase 6的服务端管理2个、Phase 7的声音克隆6个、音色资源6个）
+   - ⚠️ **1个 API** 部分实现（`GET /models/{modelId}/voices` 返回空列表）
 
 ---
 
