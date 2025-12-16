@@ -711,7 +711,7 @@ func (uc *OtaUsecase) BuildFirmwareInfo(ctx context.Context, deviceType, current
 			if err != nil || otaUrl == "" || otaUrl == "null" {
 				uc.log.Error("OTA地址未配置，请登录智控台，在参数管理找到【server.ota】配置")
 				// 这里无法从请求中获取URL，使用默认值
-				otaUrl = "http://127.0.0.1:8001/manager-api/ota"
+				otaUrl = "http://127.0.0.1:8001/xiaozhi/ota"
 			}
 			// 将URL中的/ota/替换为/otaMag/download/
 			uuidStr := uuid.New().String()

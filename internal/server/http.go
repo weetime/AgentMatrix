@@ -60,6 +60,7 @@ func NewHTTPServer(c *conf.Bootstrap,
 	// 注册自定义HTTP handlers（必须在protobuf路由注册之前，确保优先匹配）
 	service.RegisterVoiceCloneHTTPHandlers(srv, voiceClone)
 	service.RegisterOtaHTTPHandlers(srv, ota)
+	service.RegisterAgentChatHistoryHTTPHandlers(srv, agent)
 
 	v1.RegisterApiKeyServiceHTTPServer(srv, apiKey)
 	v1.RegisterConfigServiceHTTPServer(srv, config)

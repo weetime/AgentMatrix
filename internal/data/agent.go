@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/weetime/agent-matrix/internal/biz"
@@ -742,6 +741,33 @@ func (r *agentRepo) GetChatHistoryBySessionID(ctx context.Context, agentId, sess
 	return result, nil
 }
 
+// SaveChatHistory 保存聊天记录
+func (r *agentRepo) SaveChatHistory(ctx context.Context, history *biz.AgentChatHistory) error {
+	create := r.data.db.AgentChatHistory.Create().
+		SetChatType(int8(history.ChatType)).
+		SetCreatedAt(history.CreatedAt).
+		SetUpdatedAt(history.UpdatedAt)
+
+	if history.MacAddress != nil {
+		create.SetMACAddress(*history.MacAddress)
+	}
+	if history.AgentID != nil {
+		create.SetAgentID(*history.AgentID)
+	}
+	if history.SessionID != nil {
+		create.SetSessionID(*history.SessionID)
+	}
+	if history.Content != nil {
+		create.SetContent(*history.Content)
+	}
+	if history.AudioID != nil {
+		create.SetAudioID(*history.AudioID)
+	}
+
+	_, err := create.Save(ctx)
+	return err
+}
+
 // GetRecentFiftyUserChats 最近50条用户聊天
 func (r *agentRepo) GetRecentFiftyUserChats(ctx context.Context, agentId string) ([]*biz.AgentChatHistoryUserVO, error) {
 	histories, err := r.data.db.AgentChatHistory.Query().
@@ -878,9 +904,59 @@ func (r *agentRepo) GetLatestLastConnectionTimeByAgentID(ctx context.Context, ag
 
 // GetDefaultAgentByMacAddress 根据 MAC 地址获取默认智能体
 func (r *agentRepo) GetDefaultAgentByMacAddress(ctx context.Context, macAddress string) (*biz.Agent, error) {
-	// 需要 Device schema 来关联查询
-	// TODO: 实现通过设备 MAC 地址查询智能体
-	return nil, fmt.Errorf("not implemented: need Device schema")
+	// 通过 Device schema 关联查询智能体
+	// SQL逻辑: SELECT a.* FROM ai_device d LEFT JOIN ai_agent a ON d.agent_id = a.id WHERE d.mac_address = ? ORDER BY d.id DESC LIMIT 1
+	devices, err := r.data.db.Device.Query().
+		Where(device.MACAddressEQ(macAddress)).
+		Order(ent.Desc(device.FieldID)).
+		Limit(1).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(devices) == 0 {
+		return nil, nil
+	}
+
+	deviceEntity := devices[0]
+	if deviceEntity.AgentID == "" {
+		return nil, nil
+	}
+
+	// 根据 agent_id 查询智能体
+	agentEntity, err := r.data.db.Agent.Get(ctx, deviceEntity.AgentID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	// 转换为 biz.Agent
+	return &biz.Agent{
+		ID:              agentEntity.ID,
+		UserID:          agentEntity.UserID,
+		AgentCode:       agentEntity.AgentCode,
+		AgentName:       agentEntity.AgentName,
+		ASRModelID:      agentEntity.AsrModelID,
+		VADModelID:      agentEntity.VadModelID,
+		LLMModelID:      agentEntity.LlmModelID,
+		VLLMModelID:     agentEntity.VllmModelID,
+		TTSModelID:      agentEntity.TtsModelID,
+		TTSVoiceID:      agentEntity.TtsVoiceID,
+		MemModelID:      agentEntity.MemModelID,
+		IntentModelID:   agentEntity.IntentModelID,
+		ChatHistoryConf: int8(agentEntity.ChatHistoryConf),
+		SystemPrompt:    agentEntity.SystemPrompt,
+		SummaryMemory:   agentEntity.SummaryMemory,
+		LangCode:        agentEntity.LangCode,
+		Language:        agentEntity.Language,
+		Sort:            int8(agentEntity.Sort),
+		Creator:         agentEntity.Creator,
+		CreatedAt:       agentEntity.CreatedAt,
+		Updater:         agentEntity.Updater,
+		UpdatedAt:       agentEntity.UpdatedAt,
+	}, nil
 }
 
 // IsAudioOwnedByAgent 检查音频是否属于指定智能体

@@ -59,6 +59,7 @@ func isPathAllowed(path string) bool {
 		"/user/captcha",                 // 验证码
 		"/user/smsVerification",         // 短信验证
 		"/user/retrieve-password",       // 找回密码
+		"/agent/chat-history/report",    // 聊天上报
 		"/agent/chat-history/download/", // 聊天记录下载
 		"/agent/play/",                  // 智能体播放
 		"/voiceClone/play/",             // 声音克隆播放

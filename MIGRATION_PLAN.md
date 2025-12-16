@@ -119,10 +119,10 @@
 
 | 序号 | 方法 | 路径 | 功能 | 权限 | 预计工时 | 状态 |
 |------|------|------|------|------|----------|------|
-| 7 | POST | `/config/agent-models` | **获取智能体模型** - 根据设备MAC返回模型配置 | 公开 | 3天 | ⏳ 已完成 |
-| 8 | POST | `/ota/` | OTA版本和设备激活检查 | 公开 | 1天 | ❌ 未开始 |
-| 9 | POST | `/ota/activate` | 快速检查激活状态 | 公开 | 0.5天 | ❌ 未开始 |
-| 10 | GET | `/ota/` | OTA健康检查 | 公开 | 0.5天 | ❌ 未开始 |
+| 7 | POST | `/config/agent-models` | **获取智能体模型** - 根据设备MAC返回模型配置 | 公开 | 3天 | ✅ 已完成 |
+| 8 | POST | `/ota` | OTA版本和设备激活检查 | 公开 | 1天 | ✅ 已完成 |
+| 9 | POST | `/ota/activate` | 快速检查激活状态 | 公开 | 0.5天 | ✅ 已完成 |
+| 10 | GET | `/ota` | OTA健康检查 | 公开 | 0.5天 | ✅ 已完成 |
 
 **Phase 1 总计**: 约 5 天（1周）
 
@@ -212,10 +212,10 @@
 | 45 | POST | `/agent/template/batch-remove` | 批量删除模板 | 超级管理员 | 0.5天 | ✅ 已完成 |
 
 **聊天历史管理**:
-| 46 | POST | `/agent/chat-history/report` | 小智服务聊天上报 | 公开 | 1天 | ❌ 未开始 |
-| 47 | POST | `/agent/chat-history/getDownloadUrl/{agentId}/{sessionId}` | 获取下载链接 | 普通用户 | 0.5天 | ❌ 未开始 |
-| 48 | GET | `/agent/chat-history/download/{uuid}/current` | 下载当前会话 | 公开 | 0.5天 | ❌ 未开始 |
-| 49 | GET | `/agent/chat-history/download/{uuid}/previous` | 下载当前及前20条会话 | 公开 | 0.5天 | ❌ 未开始 |
+| 46 | POST | `/agent/chat-history/report` | 小智服务聊天上报 | 公开 | 1天 | ✅ 已完成 |
+| 47 | POST | `/agent/chat-history/getDownloadUrl/{agentId}/{sessionId}` | 获取下载链接 | 普通用户 | 0.5天 | ✅ 已完成 |
+| 48 | GET | `/agent/chat-history/download/{uuid}/current` | 下载当前会话 | 公开 | 0.5天 | ✅ 已完成 |
+| 49 | GET | `/agent/chat-history/download/{uuid}/previous` | 下载当前及前20条会话 | 公开 | 0.5天 | ✅ 已完成 |
 
 **声纹管理**:
 | 50 | POST | `/agent/voice-print` | 创建智能体声纹 | 普通用户 | 1天 | ✅ 已完成 |

@@ -558,3 +558,19 @@ message GetAgentMcpToolsRequest {
   string agent_id = 1 [(validate.rules).string.min_len = 1]; // 智能体ID
 }
 
+// ReportChatHistoryRequest 聊天上报请求
+message ReportChatHistoryRequest {
+  string mac_address = 1 [(validate.rules).string.min_len = 1]; // MAC地址
+  string session_id = 2 [(validate.rules).string.min_len = 1]; // 会话ID
+  int32 chat_type = 3 [(validate.rules).int32 = {in: [1, 2]}]; // 消息类型: 1-用户, 2-智能体
+  string content = 4 [(validate.rules).string.min_len = 1]; // 聊天内容
+  google.protobuf.StringValue audio_base64 = 5; // 可选，base64编码的音频数据
+  google.protobuf.Int64Value report_time = 6; // 可选，十位时间戳，空时默认使用当前时间
+}
+
+// GetChatHistoryDownloadUrlRequest 获取下载链接请求
+message GetChatHistoryDownloadUrlRequest {
+  string agent_id = 1 [(validate.rules).string.min_len = 1]; // 智能体ID
+  string session_id = 2 [(validate.rules).string.min_len = 1]; // 会话ID
+}
+

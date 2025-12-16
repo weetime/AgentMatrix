@@ -26,3 +26,10 @@ const (
 	ChatHistoryConfRecordText      = 1 // 记录文本
 	ChatHistoryConfRecordTextAudio = 2 // 文本音频都记录
 )
+
+// 错误码常量（对应 Java 的 ErrorCode）
+const (
+	ErrorCodeChatHistoryNoPermission = 10132 // 没有权限查看该智能体的聊天记录
+	ErrorCodeDownloadLinkExpired     = 10136 // 下载链接已过期或无效
+	ErrorCodeDownloadLinkInvalid     = 10137 // 下载链接无效
+)

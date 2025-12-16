@@ -2,11 +2,13 @@ package biz
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/weetime/agent-matrix/internal/constant"
 	"github.com/weetime/agent-matrix/internal/kit"
 	"github.com/weetime/agent-matrix/internal/kit/cerrors"
 
@@ -162,6 +164,7 @@ type AgentRepo interface {
 	ReorderTemplatesAfterDelete(ctx context.Context, deletedSort int8) error
 	GetSessionsByAgentID(ctx context.Context, agentId string, page *kit.PageRequest) ([]*AgentChatSession, int, error)
 	GetChatHistoryBySessionID(ctx context.Context, agentId, sessionId string) ([]*AgentChatHistory, error)
+	SaveChatHistory(ctx context.Context, history *AgentChatHistory) error
 	GetRecentFiftyUserChats(ctx context.Context, agentId string) ([]*AgentChatHistoryUserVO, error)
 	GetContentByAudioID(ctx context.Context, audioId string) (string, error)
 	GetAudioByID(ctx context.Context, audioId string) ([]byte, error)
@@ -569,6 +572,255 @@ func (uc *AgentUsecase) CheckAgentPermission(ctx context.Context, agentId string
 	}
 
 	return agent.UserID == userId, nil
+}
+
+// ReportChatHistoryRequest 聊天上报请求
+type ReportChatHistoryRequest struct {
+	MacAddress  string
+	SessionID   string
+	ChatType    int8
+	Content     string
+	AudioBase64 *string
+	ReportTime  *int64 // 十位时间戳，nil时使用当前时间
+}
+
+// ReportChatHistory 处理聊天记录上报
+func (uc *AgentUsecase) ReportChatHistory(ctx context.Context, req *ReportChatHistoryRequest) (bool, error) {
+	// 根据 MAC 地址获取默认智能体
+	agent, err := uc.repo.GetDefaultAgentByMacAddress(ctx, req.MacAddress)
+	if err != nil {
+		return false, fmt.Errorf("获取智能体失败: %w", err)
+	}
+	if agent == nil {
+		uc.log.Warnf("MAC地址 %s 未找到对应的智能体", req.MacAddress)
+		return false, nil
+	}
+
+	// 确定保存策略
+	chatHistoryConf := agent.ChatHistoryConf
+	var audioID *string
+
+	// 如果需要保存音频
+	if chatHistoryConf == constant.ChatHistoryConfRecordTextAudio {
+		if req.AudioBase64 != nil && *req.AudioBase64 != "" {
+			// Base64 解码音频数据
+			audioData, err := decodeBase64(*req.AudioBase64)
+			if err != nil {
+				uc.log.Errorf("音频数据解码失败: %v", err)
+				return false, fmt.Errorf("音频数据解码失败: %w", err)
+			}
+
+			// 保存音频并获取 audioID
+			audioIDStr := uuid.New().String()
+			if err := uc.repo.SaveAudio(ctx, audioIDStr, audioData); err != nil {
+				uc.log.Errorf("音频数据保存失败: %v", err)
+				return false, fmt.Errorf("音频数据保存失败: %w", err)
+			}
+			audioID = &audioIDStr
+			uc.log.Infof("音频数据保存成功，audioId=%s", audioIDStr)
+		}
+	}
+
+	// 如果需要保存文本
+	if chatHistoryConf == constant.ChatHistoryConfRecordText || chatHistoryConf == constant.ChatHistoryConfRecordTextAudio {
+		// 确定创建时间
+		var createdAt time.Time
+		if req.ReportTime != nil {
+			createdAt = time.Unix(*req.ReportTime, 0)
+		} else {
+			createdAt = time.Now()
+		}
+
+		// 构建聊天记录实体
+		macAddress := req.MacAddress
+		agentID := agent.ID
+		sessionID := req.SessionID
+		content := req.Content
+
+		history := &AgentChatHistory{
+			MacAddress: &macAddress,
+			AgentID:    &agentID,
+			SessionID:  &sessionID,
+			ChatType:   req.ChatType,
+			Content:    &content,
+			AudioID:    audioID,
+			CreatedAt:  createdAt,
+			UpdatedAt:  createdAt,
+		}
+
+		// 保存聊天记录
+		if err := uc.repo.SaveChatHistory(ctx, history); err != nil {
+			return false, fmt.Errorf("保存聊天记录失败: %w", err)
+		}
+
+		uc.log.Infof("设备 %s 对应智能体 %s 上报成功", req.MacAddress, agent.ID)
+	}
+
+	// 更新设备最后连接时间到 Redis
+	if uc.redisClient != nil {
+		key := fmt.Sprintf("agent:device:lastConnectedAt:%s", agent.ID)
+		now := time.Now()
+		if err := uc.redisClient.Set(ctx, key, now, 0); err != nil {
+			uc.log.Warnf("更新设备最后连接时间到Redis失败: %v", err)
+		}
+	}
+
+	// 更新设备最后连接时间（通过 DeviceUsecase）
+	// 注意：这里需要 DeviceUsecase，但当前 AgentUsecase 没有这个依赖
+	// 可以考虑通过 repo 直接更新，或者添加 DeviceUsecase 依赖
+	// 暂时先跳过设备更新，因为需要 DeviceUsecase
+
+	return true, nil
+}
+
+// GetChatHistoryDownloadUrl 获取聊天记录下载链接
+func (uc *AgentUsecase) GetChatHistoryDownloadUrl(ctx context.Context, agentId, sessionId string) (string, error) {
+	// 生成 UUID
+	uuidStr := uuid.New().String()
+
+	// 存储到 Redis（key: agent:chat:history:{uuid}, value: agentId:sessionId）
+	key := fmt.Sprintf("agent:chat:history:%s", uuidStr)
+	value := fmt.Sprintf("%s:%s", agentId, sessionId)
+	if uc.redisClient != nil {
+		// 设置24小时过期
+		if err := uc.redisClient.Set(ctx, key, value, 24*time.Hour); err != nil {
+			return "", fmt.Errorf("保存下载链接到Redis失败: %w", err)
+		}
+	} else {
+		return "", fmt.Errorf("Redis客户端未初始化")
+	}
+
+	return uuidStr, nil
+}
+
+// DownloadChatHistoryRequest 下载聊天记录请求
+type DownloadChatHistoryRequest struct {
+	UUID            string
+	IncludePrevious bool // 是否包含前20条会话
+}
+
+// DownloadChatHistoryResponse 下载聊天记录响应
+type DownloadChatHistoryResponse struct {
+	Content []byte
+}
+
+// DownloadChatHistory 下载聊天记录
+func (uc *AgentUsecase) DownloadChatHistory(ctx context.Context, uuid string, includePrevious bool) ([]byte, error) {
+	// 从 Redis 获取 agentId 和 sessionId
+	key := fmt.Sprintf("agent:chat:history:%s", uuid)
+	var agentSessionInfo string
+	if uc.redisClient != nil {
+		val, err := uc.redisClient.Get(ctx, key)
+		if err != nil || val == "" {
+			return nil, fmt.Errorf("下载链接已过期或无效")
+		}
+		agentSessionInfo = val
+	} else {
+		return nil, fmt.Errorf("Redis客户端未初始化")
+	}
+
+	// 解析 agentId 和 sessionId
+	parts := strings.Split(agentSessionInfo, ":")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("下载链接无效")
+	}
+	agentId := parts[0]
+	sessionId := parts[1]
+
+	var sessionIds []string
+	if includePrevious {
+		// 获取所有会话列表
+		page := &kit.PageRequest{}
+		page.SetPageNo(1)
+		page.SetPageSize(1000)
+		sessions, _, err := uc.repo.GetSessionsByAgentID(ctx, agentId, page)
+		if err != nil {
+			return nil, fmt.Errorf("获取会话列表失败: %w", err)
+		}
+
+		// 找到当前会话在列表中的位置
+		currentIndex := -1
+		for i, session := range sessions {
+			if session.SessionID == sessionId {
+				currentIndex = i
+				break
+			}
+		}
+
+		// 从当前会话开始，向后取最多20条会话（包括当前会话）
+		if currentIndex != -1 {
+			endIndex := currentIndex + 20
+			if endIndex > len(sessions) {
+				endIndex = len(sessions)
+			}
+			for i := currentIndex; i < endIndex; i++ {
+				sessionIds = append(sessionIds, sessions[i].SessionID)
+			}
+		} else {
+			// 如果没找到，至少下载当前会话
+			sessionIds = []string{sessionId}
+		}
+	} else {
+		// 只下载当前会话
+		sessionIds = []string{sessionId}
+	}
+
+	// 生成文本内容
+	var content strings.Builder
+	for i, sid := range sessionIds {
+		// 获取该会话的所有聊天记录
+		histories, err := uc.repo.GetChatHistoryBySessionID(ctx, agentId, sid)
+		if err != nil {
+			return nil, fmt.Errorf("获取聊天记录失败: %w", err)
+		}
+
+		// 从聊天记录中获取第一条消息的创建时间作为会话时间
+		if len(histories) > 0 {
+			firstMessageTime := histories[0].CreatedAt
+			sessionTimeStr := formatDateTime(firstMessageTime)
+			content.WriteString(sessionTimeStr)
+			content.WriteString("\n")
+		}
+
+		// 写入每条消息
+		for _, msg := range histories {
+			role := "用户"
+			direction := ">>"
+			if msg.ChatType == 2 {
+				role = "智能体"
+				direction = "<<"
+			}
+			messageTimeStr := formatDateTime(msg.CreatedAt)
+			msgContent := ""
+			if msg.Content != nil {
+				msgContent = *msg.Content
+			}
+			line := fmt.Sprintf("[%s]-[%s]%s:%s\n", role, messageTimeStr, direction, msgContent)
+			content.WriteString(line)
+		}
+
+		// 会话之间添加空行分隔
+		if i < len(sessionIds)-1 {
+			content.WriteString("\n")
+		}
+	}
+
+	// 下载完成后删除 Redis key
+	if uc.redisClient != nil {
+		uc.redisClient.Delete(ctx, key)
+	}
+
+	return []byte(content.String()), nil
+}
+
+// decodeBase64 解码 Base64 字符串
+func decodeBase64(s string) ([]byte, error) {
+	return base64.StdEncoding.DecodeString(s)
+}
+
+// formatDateTime 格式化日期时间为 yyyy-MM-dd HH:mm:ss
+func formatDateTime(t time.Time) string {
+	return t.Format("2006-01-02 15:04:05")
 }
 
 // GetAgentMcpAccessAddress 获取智能体的MCP接入点地址
