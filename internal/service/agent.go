@@ -14,17 +14,19 @@ import (
 )
 
 type AgentService struct {
-	uc           *biz.AgentUsecase
-	modelUc      *biz.ModelUsecase
-	voicePrintUc *biz.AgentVoicePrintUsecase
+	uc                *biz.AgentUsecase
+	modelUc           *biz.ModelUsecase
+	voicePrintUc      *biz.AgentVoicePrintUsecase
+	contextProviderUc *biz.AgentContextProviderUsecase
 	pb.UnimplementedAgentServiceServer
 }
 
-func NewAgentService(uc *biz.AgentUsecase, modelUc *biz.ModelUsecase, voicePrintUc *biz.AgentVoicePrintUsecase) *AgentService {
+func NewAgentService(uc *biz.AgentUsecase, modelUc *biz.ModelUsecase, voicePrintUc *biz.AgentVoicePrintUsecase, contextProviderUc *biz.AgentContextProviderUsecase) *AgentService {
 	return &AgentService{
-		uc:           uc,
-		modelUc:      modelUc,
-		voicePrintUc: voicePrintUc,
+		uc:                uc,
+		modelUc:           modelUc,
+		voicePrintUc:      voicePrintUc,
+		contextProviderUc: contextProviderUc,
 	}
 }
 
@@ -174,37 +176,51 @@ func (s *AgentService) GetAgentById(ctx context.Context, req *pb.GetAgentByIdReq
 	for _, pm := range pluginMappings {
 		functions = append(functions, map[string]interface{}{
 			"id":           fmt.Sprintf("%d", pm.ID),
-			"agentId":      fmt.Sprintf("%d", pm.AgentID),
-			"pluginId":     fmt.Sprintf("%d", pm.PluginID),
+			"agentId":      pm.AgentID,
+			"pluginId":     pm.PluginID,
 			"paramInfo":    pm.ParamInfo,
 			"providerCode": pm.ProviderCode,
 		})
 	}
 
+	// 查询上下文源配置
+	var contextProviders []interface{}
+	contextProviderEntity, err := s.contextProviderUc.GetByAgentId(ctx, req.GetId())
+	if err == nil && contextProviderEntity != nil && len(contextProviderEntity.ContextProviders) > 0 {
+		contextProviders = make([]interface{}, 0, len(contextProviderEntity.ContextProviders))
+		for _, cp := range contextProviderEntity.ContextProviders {
+			contextProviders = append(contextProviders, map[string]interface{}{
+				"url":     cp.URL,
+				"headers": cp.Headers,
+			})
+		}
+	}
+
 	data := map[string]interface{}{
-		"id":              fmt.Sprintf("%d", agent.ID),
-		"userId":          fmt.Sprintf("%d", agent.UserID),
-		"agentCode":       agent.AgentCode,
-		"agentName":       agent.AgentName,
-		"asrModelId":      fmt.Sprintf("%d", agent.ASRModelID),
-		"vadModelId":      fmt.Sprintf("%d", agent.VADModelID),
-		"llmModelId":      fmt.Sprintf("%d", agent.LLMModelID),
-		"vllmModelId":     fmt.Sprintf("%d", agent.VLLMModelID),
-		"ttsModelId":      fmt.Sprintf("%d", agent.TTSModelID),
-		"ttsVoiceId":      fmt.Sprintf("%d", agent.TTSVoiceID),
-		"memModelId":      fmt.Sprintf("%d", agent.MemModelID),
-		"intentModelId":   fmt.Sprintf("%d", agent.IntentModelID),
-		"chatHistoryConf": agent.ChatHistoryConf,
-		"systemPrompt":    agent.SystemPrompt,
-		"summaryMemory":   agent.SummaryMemory,
-		"langCode":        agent.LangCode,
-		"language":        agent.Language,
-		"sort":            agent.Sort,
-		"creator":         fmt.Sprintf("%d", agent.Creator),
-		"createdAt":       agent.CreatedAt.Format(time.RFC3339),
-		"updater":         fmt.Sprintf("%d", agent.Updater),
-		"updatedAt":       agent.UpdatedAt.Format(time.RFC3339),
-		"functions":       functions,
+		"id":               agent.ID,
+		"userId":           fmt.Sprintf("%d", agent.UserID),
+		"agentCode":        agent.AgentCode,
+		"agentName":        agent.AgentName,
+		"asrModelId":       agent.ASRModelID,
+		"vadModelId":       agent.VADModelID,
+		"llmModelId":       agent.LLMModelID,
+		"vllmModelId":      agent.VLLMModelID,
+		"ttsModelId":       agent.TTSModelID,
+		"ttsVoiceId":       agent.TTSVoiceID,
+		"memModelId":       agent.MemModelID,
+		"intentModelId":    agent.IntentModelID,
+		"chatHistoryConf":  agent.ChatHistoryConf,
+		"systemPrompt":     agent.SystemPrompt,
+		"summaryMemory":    agent.SummaryMemory,
+		"langCode":         agent.LangCode,
+		"language":         agent.Language,
+		"sort":             agent.Sort,
+		"creator":          fmt.Sprintf("%d", agent.Creator),
+		"createdAt":        agent.CreatedAt.Format(time.RFC3339),
+		"updater":          fmt.Sprintf("%d", agent.Updater),
+		"updatedAt":        agent.UpdatedAt.Format(time.RFC3339),
+		"functions":        functions,
+		"contextProviders": contextProviders,
 	}
 
 	dataStruct, err := structpb.NewStruct(data)
@@ -243,7 +259,7 @@ func (s *AgentService) CreateAgent(ctx context.Context, req *pb.AgentCreateReque
 	}
 
 	data := map[string]interface{}{
-		"id": fmt.Sprintf("%d", agent.ID),
+		"id": agent.ID,
 	}
 
 	dataStruct, err := structpb.NewStruct(data)
@@ -344,7 +360,8 @@ func (s *AgentService) UpdateAgent(ctx context.Context, req *pb.AgentUpdateReque
 	}
 
 	// TODO: 从 context 获取用户ID
-	agent.Updater = int64(1)
+	userId := int64(1)
+	agent.Updater = userId
 
 	err := s.uc.UpdateAgent(ctx, agent)
 	if err != nil {
@@ -352,6 +369,29 @@ func (s *AgentService) UpdateAgent(ctx context.Context, req *pb.AgentUpdateReque
 			Code: 500,
 			Msg:  err.Error(),
 		}, nil
+	}
+
+	// 更新上下文源配置
+	if len(req.ContextProviders) > 0 {
+		providers := make([]*biz.ContextProviderDTO, 0, len(req.ContextProviders))
+		for _, cp := range req.ContextProviders {
+			headers := make(map[string]string)
+			if cp.Headers != nil {
+				for k, v := range cp.Headers {
+					headers[k] = v
+				}
+			}
+			providers = append(providers, &biz.ContextProviderDTO{
+				URL:     cp.Url,
+				Headers: headers,
+			})
+		}
+		if err := s.contextProviderUc.SaveOrUpdateByAgentId(ctx, req.GetId(), providers, userId); err != nil {
+			return &pb.Response{
+				Code: 500,
+				Msg:  fmt.Sprintf("更新上下文源配置失败: %v", err),
+			}, nil
+		}
 	}
 
 	return &pb.Response{
@@ -369,7 +409,15 @@ func (s *AgentService) DeleteAgent(ctx context.Context, req *pb.GetAgentByIdRequ
 		}, nil
 	}
 
-	err := s.uc.DeleteAgent(ctx, req.GetId())
+	agentId := req.GetId()
+
+	// 删除关联的上下文源配置
+	if err := s.contextProviderUc.DeleteByAgentId(ctx, agentId); err != nil {
+		// 记录日志但不中断删除流程（上下文源配置可能不存在）
+		// 忽略错误，继续删除智能体
+	}
+
+	err := s.uc.DeleteAgent(ctx, agentId)
 	if err != nil {
 		return &pb.Response{
 			Code: 500,

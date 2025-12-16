@@ -33,3 +33,12 @@ const (
 	ErrorCodeDownloadLinkExpired     = 10136 // 下载链接已过期或无效
 	ErrorCodeDownloadLinkInvalid     = 10137 // 下载链接无效
 )
+
+// 系统参数常量
+const (
+	// ServerAuthEnabled WebSocket认证开关
+	ServerAuthEnabled = "server.auth.enabled"
+)
+
+// 版本号
+const Version = "0.8.10"

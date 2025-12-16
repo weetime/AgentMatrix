@@ -57,6 +57,7 @@ type ConfigUsecase struct {
 	ttsVoiceUsecase   *TtsVoiceUsecase
 	voiceCloneUsecase *VoiceCloneUsecase
 	voicePrintRepo    AgentVoicePrintRepo
+	contextProviderUc *AgentContextProviderUsecase
 	redisClient       *kit.RedisClient
 	handleError       *cerrors.HandleError
 	log               *log.Helper
@@ -71,6 +72,7 @@ func NewConfigUsecase(
 	ttsVoiceUsecase *TtsVoiceUsecase,
 	voiceCloneUsecase *VoiceCloneUsecase,
 	voicePrintRepo AgentVoicePrintRepo,
+	contextProviderUc *AgentContextProviderUsecase,
 	redisClient *kit.RedisClient,
 	logger log.Logger,
 ) *ConfigUsecase {
@@ -82,6 +84,7 @@ func NewConfigUsecase(
 		ttsVoiceUsecase:   ttsVoiceUsecase,
 		voiceCloneUsecase: voiceCloneUsecase,
 		voicePrintRepo:    voicePrintRepo,
+		contextProviderUc: contextProviderUc,
 		redisClient:       redisClient,
 		handleError:       cerrors.NewHandleError(logger),
 		log:               kit.LogHelper(logger),
@@ -789,10 +792,25 @@ func (uc *ConfigUsecase) GetAgentModels(ctx context.Context, macAddress string, 
 		result["mcp_endpoint"] = mcpEndpoint
 	}
 
-	// 7. 获取声纹信息
+	// 7. 获取上下文源配置
+	if uc.contextProviderUc != nil {
+		contextProviderEntity, err := uc.contextProviderUc.GetByAgentId(ctx, agent.ID)
+		if err == nil && contextProviderEntity != nil && len(contextProviderEntity.ContextProviders) > 0 {
+			contextProviders := make([]interface{}, 0, len(contextProviderEntity.ContextProviders))
+			for _, cp := range contextProviderEntity.ContextProviders {
+				contextProviders = append(contextProviders, map[string]interface{}{
+					"url":     cp.URL,
+					"headers": cp.Headers,
+				})
+			}
+			result["context_providers"] = contextProviders
+		}
+	}
+
+	// 8. 获取声纹信息
 	uc.buildVoiceprintConfig(ctx, agent.ID, result)
 
-	// 8. 构建模块配置
+	// 9. 构建模块配置
 	err = uc.buildModuleConfigForAgent(ctx, agent, voice, referenceAudio, referenceText, result)
 	if err != nil {
 		return nil, uc.handleError.ErrInternal(ctx, err)

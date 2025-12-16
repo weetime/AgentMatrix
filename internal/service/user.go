@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 
 const (
 	// Version 版本号
-	Version = "0.8.9"
+	Version = "0.8.10"
 	// DictTypeMobileArea 手机区号字典类型
 	DictTypeMobileArea = "MOBILE_AREA"
 )
@@ -327,6 +328,15 @@ func (s *UserService) GetPubConfig(ctx context.Context, req *pb.GetPubConfigRequ
 		"beianGaNum":           beianGaNum,
 		"name":                 name,
 		"sm2PublicKey":         sm2PublicKey,
+	}
+
+	// 获取system-web.menu参数配置
+	menuConfig, _ := s.configUsecase.GetValue(ctx, "system-web.menu", true)
+	if menuConfig != "" && menuConfig != "null" {
+		var menuConfigObj interface{}
+		if err := json.Unmarshal([]byte(menuConfig), &menuConfigObj); err == nil {
+			data["systemWebMenu"] = menuConfigObj
+		}
 	}
 
 	dataStruct, err := structpb.NewStruct(data)

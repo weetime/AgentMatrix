@@ -580,7 +580,26 @@ func (uc *OtaUsecase) CheckDeviceActive(ctx context.Context, macAddress, clientI
 			websocket.URL = "ws://xiaozhi.server.com:8000/xiaozhi/v1/"
 		}
 	}
-	websocket.Token = ""
+
+	// 检查是否启用认证并生成token
+	authEnabled, err := uc.ConfigUsecase.GetValue(ctx, "server.auth.enabled", true)
+	if err == nil && authEnabled == "true" {
+		// 生成token
+		secretKey, err := uc.ConfigUsecase.GetValue(ctx, "server.secret", false)
+		if err == nil && secretKey != "" {
+			token, err := kit.GenerateWebSocketToken(clientId, macAddress, secretKey)
+			if err != nil {
+				uc.log.Error("生成WebSocket token失败: %v", err)
+				websocket.Token = ""
+			} else {
+				websocket.Token = token
+			}
+		} else {
+			websocket.Token = ""
+		}
+	} else {
+		websocket.Token = ""
+	}
 	response.Websocket = websocket
 
 	// 添加MQTT UDP配置

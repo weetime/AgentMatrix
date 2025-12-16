@@ -34,6 +34,12 @@ message AgentPluginMapping {
   string provider_code = 5;           // 插件provider_code
 }
 
+// ContextProvider 上下文源配置
+message ContextProvider {
+  string url = 1;                    // URL地址
+  map<string, string> headers = 2;    // 请求头
+}
+
 // AgentInfoVO 智能体详情
 message AgentInfoVO {
   string id = 1;                     // 智能体ID
@@ -59,6 +65,7 @@ message AgentInfoVO {
   int64 updater = 21;                // 更新者
   string updated_at = 22;            // 更新时间
   repeated AgentPluginMapping functions = 23; // 插件列表
+  repeated ContextProvider context_providers = 24; // 上下文源配置
 }
 
 // AgentCreateRequest 创建智能体请求
@@ -86,6 +93,7 @@ message AgentUpdateRequest {
   google.protobuf.StringValue language = 16;           // 交互语种
   google.protobuf.Int32Value sort = 17;                 // 排序
   repeated AgentPluginMapping functions = 18;          // 插件列表
+  repeated ContextProvider context_providers = 19;    // 上下文源配置
 }
 
 // AgentMemoryRequest 记忆更新请求
