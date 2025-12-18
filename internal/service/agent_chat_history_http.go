@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 )
 
 // RegisterAgentChatHistoryHTTPHandlers 注册聊天历史管理的HTTP handlers
-func RegisterAgentChatHistoryHTTPHandlers(srv *kratoshttp.Server, agentService *AgentService) {
+func RegisterAgentChatHistoryHTTPHandlers(srv *kratoshttp.Server, agentService *AgentService, tokenService middleware.TokenService, serverSecretService middleware.ServerSecretService) {
 	// 注意：静态路由必须在动态路由之前注册，防止路由被覆盖
 	// 1. 静态路由：下载当前会话
 	srv.HandlePrefix("/agent/chat-history/download/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -39,13 +40,14 @@ func RegisterAgentChatHistoryHTTPHandlers(srv *kratoshttp.Server, agentService *
 	})
 
 	// 3. 动态路由：获取下载链接（需要认证）
-	srv.HandleFunc("/agent/chat-history/getDownloadUrl/", func(w http.ResponseWriter, r *http.Request) {
+	// 路径格式: /agent/chat-history/getDownloadUrl/{agentId}/{sessionId}
+	srv.HandlePrefix("/agent/chat-history/getDownloadUrl/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		agentService.GetDownloadUrlHandler(w, r)
-	})
+		agentService.GetDownloadUrlHandler(w, r, tokenService, serverSecretService)
+	}))
 }
 
 // ReportChatHistoryHandler 处理聊天上报请求
@@ -99,7 +101,8 @@ func (s *AgentService) ReportChatHistoryHandler(w http.ResponseWriter, r *http.R
 }
 
 // GetDownloadUrlHandler 处理获取下载链接请求
-func (s *AgentService) GetDownloadUrlHandler(w http.ResponseWriter, r *http.Request) {
+// 注意：因为使用HandlePrefix注册的路由不会经过kratos中间件，所以需要手动处理认证
+func (s *AgentService) GetDownloadUrlHandler(w http.ResponseWriter, r *http.Request, tokenService middleware.TokenService, serverSecretService middleware.ServerSecretService) {
 	ctx := r.Context()
 
 	// 从路径中提取 agentId 和 sessionId
@@ -127,33 +130,63 @@ func (s *AgentService) GetDownloadUrlHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// 获取当前用户信息
-	user, err := middleware.GetUserFromContext(ctx)
-	if err != nil {
+	// 手动处理认证（因为HandlePrefix不会经过中间件）
+	// 从HTTP请求中提取Token
+	token := extractTokenFromRequest(r)
+	if token == "" {
 		writeErrorResponse(w, http.StatusUnauthorized, 401, "未授权，请先登录")
 		return
 	}
 
-	// 检查权限
-	hasPermission, err := s.uc.CheckAgentPermission(ctx, agentId, user.ID, user.SuperAdmin == 1)
-	if err != nil {
-		writeErrorResponse(w, http.StatusInternalServerError, 500, err.Error())
-		return
-	}
-	if !hasPermission {
-		writeErrorResponse(w, http.StatusForbidden, constant.ErrorCodeChatHistoryNoPermission, "没有权限查看该智能体的聊天记录")
+	// 首先尝试用用户token验证
+	user, err := tokenService.GetUserByToken(ctx, token)
+	if err == nil && user != nil {
+		// 用户token验证成功，检查账号状态
+		if user.Status == 0 {
+			writeErrorResponse(w, http.StatusUnauthorized, 401, "账号已被锁定")
+			return
+		}
+
+		// 将用户信息存储到Context中
+		ctx = context.WithValue(ctx, middleware.UserDetailKey, user)
+		ctx = context.WithValue(ctx, middleware.UserIDKey, user.ID)
+
+		// 检查权限
+		hasPermission, err := s.uc.CheckAgentPermission(ctx, agentId, user.ID, user.SuperAdmin == 1)
+		if err != nil {
+			writeErrorResponse(w, http.StatusInternalServerError, 500, err.Error())
+			return
+		}
+		if !hasPermission {
+			writeErrorResponse(w, http.StatusForbidden, constant.ErrorCodeChatHistoryNoPermission, "没有权限查看该智能体的聊天记录")
+			return
+		}
+
+		// 生成下载链接
+		uuid, err := s.uc.GetChatHistoryDownloadUrl(ctx, agentId, sessionId)
+		if err != nil {
+			writeErrorResponse(w, http.StatusInternalServerError, 500, err.Error())
+			return
+		}
+
+		// 返回响应
+		writeSuccessResponse(w, uuid)
 		return
 	}
 
-	// 生成下载链接
-	uuid, err := s.uc.GetChatHistoryDownloadUrl(ctx, agentId, sessionId)
-	if err != nil {
-		writeErrorResponse(w, http.StatusInternalServerError, 500, err.Error())
-		return
+	// 用户token验证失败，尝试用server.secret验证
+	if serverSecretService != nil {
+		serverSecret, err := serverSecretService.GetServerSecret(ctx)
+		if err == nil && serverSecret != "" && serverSecret == token {
+			// server.secret验证成功，但需要用户信息来检查权限
+			// 这种情况下，我们无法获取用户信息，所以返回401
+			writeErrorResponse(w, http.StatusUnauthorized, 401, "需要用户认证")
+			return
+		}
 	}
 
-	// 返回响应
-	writeSuccessResponse(w, uuid)
+	// 两种验证都失败，返回401
+	writeErrorResponse(w, http.StatusUnauthorized, 401, "未授权，请先登录")
 }
 
 // DownloadCurrentSessionHandler 处理下载当前会话请求

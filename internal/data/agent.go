@@ -284,6 +284,8 @@ func (r *agentRepo) UpdateAgent(ctx context.Context, agent *biz.Agent) error {
 	if agent.Language != "" {
 		update.SetLanguage(agent.Language)
 	}
+	// ChatHistoryConf 总是更新（因为它是int8类型，0也是有效值）
+	update.SetChatHistoryConf(int32(agent.ChatHistoryConf))
 	if agent.Updater > 0 {
 		update.SetUpdater(agent.Updater)
 	}

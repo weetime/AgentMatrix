@@ -341,6 +341,9 @@ func (uc *AgentUsecase) UpdateAgent(ctx context.Context, agent *Agent) error {
 	if agent.Language != "" {
 		existing.Language = agent.Language
 	}
+
+	existing.ChatHistoryConf = agent.ChatHistoryConf
+
 	if agent.Updater > 0 {
 		existing.Updater = agent.Updater
 	}
@@ -611,7 +614,8 @@ func (uc *AgentUsecase) ReportChatHistory(ctx context.Context, req *ReportChatHi
 			}
 
 			// 保存音频并获取 audioID
-			audioIDStr := uuid.New().String()
+			// 注意：AgentChatAudio.id 字段最大长度为 32，所以需要移除 UUID 中的连字符
+			audioIDStr := strings.ReplaceAll(uuid.New().String(), "-", "")
 			if err := uc.repo.SaveAudio(ctx, audioIDStr, audioData); err != nil {
 				uc.log.Errorf("音频数据保存失败: %v", err)
 				return false, fmt.Errorf("音频数据保存失败: %w", err)

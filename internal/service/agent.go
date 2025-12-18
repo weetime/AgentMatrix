@@ -358,6 +358,9 @@ func (s *AgentService) UpdateAgent(ctx context.Context, req *pb.AgentUpdateReque
 	if req.Sort != nil {
 		agent.Sort = int8(req.Sort.GetValue())
 	}
+	if req.ChatHistoryConf != nil {
+		agent.ChatHistoryConf = int8(req.ChatHistoryConf.GetValue())
+	}
 
 	// TODO: 从 context 获取用户ID
 	userId := int64(1)
